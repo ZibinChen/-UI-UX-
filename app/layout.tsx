@@ -25,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="zh-CN" className="bg-background">
-      <body className={`${notoSansSC.variable} font-sans antialiased`}>
+    <html lang="zh-CN" className="bg-background" suppressHydrationWarning>
+      <body className={`${notoSansSC.variable} font-sans antialiased`} suppressHydrationWarning>
         {children}
       </body>
     </html>
