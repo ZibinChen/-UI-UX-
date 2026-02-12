@@ -7,10 +7,12 @@ import { FilterBar } from "./filter-bar"
 import { TabNavigation } from "./tab-navigation"
 import { AssetsPanel } from "./panels/assets-panel"
 import { CustomersPanel } from "./panels/customers-panel"
+import { CreditCardPanel } from "./panels/credit-card-panel"
 import { PlaceholderPanel } from "./panels/placeholder-panel"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 const mainTabs = [
+  { id: "credit-card", label: "信用卡经营" },
   { id: "assets", label: "资产负债" },
   { id: "customers", label: "客户基础" },
   { id: "performance", label: "经营效益" },
@@ -19,7 +21,7 @@ const mainTabs = [
 
 export function DashboardShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
-  const [activeMainTab, setActiveMainTab] = useState("assets")
+  const [activeMainTab, setActiveMainTab] = useState("credit-card")
   const [activeSidebarItem, setActiveSidebarItem] = useState("assets")
 
   return (
@@ -49,6 +51,7 @@ export function DashboardShell() {
           {/* Content */}
           <ScrollArea className="flex-1">
             <div className="p-6">
+              {activeMainTab === "credit-card" && <CreditCardPanel />}
               {activeMainTab === "assets" && <AssetsPanel />}
               {activeMainTab === "customers" && <CustomersPanel />}
               {activeMainTab === "performance" && <PlaceholderPanel title="经营效益" />}

@@ -10,9 +10,9 @@ interface FilterBarProps {
 }
 
 export function FilterBar({
-  breadcrumb = ["管理驾驶舱", "资产负债"],
+  breadcrumb = ["管理驾驶舱", "信用卡经营"],
   institution = "境内分支机构汇总",
-  date = "2023/08/13",
+  date = "2026/02/12",
 }: FilterBarProps) {
   return (
     <div className="px-6 py-3 border-b border-border bg-card">
