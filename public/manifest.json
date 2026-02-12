@@ -1,0 +1,9 @@
+{
+  "name": "银行管理驾驶舱",
+  "short_name": "管理驾驶舱",
+  "description": "银行管理驾驶舱报表系统",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#d42020"
+}
