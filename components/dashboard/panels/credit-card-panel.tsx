@@ -21,7 +21,6 @@ interface CreditCardPanelProps {
 }
 
 function formatTitleDate(dateStr: string): string {
-  // "2026/02/12" -> "2026年2月12日"
   const parts = dateStr.split("/")
   if (parts.length !== 3) return dateStr
   return `${parts[0]}年${Number(parts[1])}月${Number(parts[2])}日`
@@ -70,26 +69,23 @@ export function CreditCardPanel({ selectedInstitution, selectedDate }: CreditCar
       )}
 
       {activeSubTab === "customer" && (
-        <IndicatorsTable
-          data={indicators.filter((r) => r.category === "customer")}
-          title={`${instName} — 有效客户`}
-          isSummary={isSummary}
+        <CustomerSubPanel
+          selectedInstitution={selectedInstitution}
+          selectedDate={selectedDate}
         />
       )}
 
       {activeSubTab === "consumption" && (
-        <IndicatorsTable
-          data={indicators.filter((r) => r.category === "consumption")}
-          title={`${instName} — 消费额类别`}
-          isSummary={isSummary}
+        <ConsumptionSubPanel
+          selectedInstitution={selectedInstitution}
+          selectedDate={selectedDate}
         />
       )}
 
       {activeSubTab === "loan" && (
-        <IndicatorsTable
-          data={indicators.filter((r) => r.category === "loan")}
-          title={`${instName} — 贷款余额和不良余额`}
-          isSummary={isSummary}
+        <LoanSubPanel
+          selectedInstitution={selectedInstitution}
+          selectedDate={selectedDate}
         />
       )}
     </div>

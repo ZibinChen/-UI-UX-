@@ -117,24 +117,24 @@ interface Def {
 }
 
 const defs: Def[] = [
-  { id: "eff_cust",      name: "有效客户",        indent: 0, category: "customer",    unit: "万户", comparisonType: "较年初", nationalTotal: 6832,   nationalYearStart: 6580 },
-  { id: "new_cust",      name: "其中：新增客户",   indent: 1, category: "customer",    unit: "万户", comparisonType: "同比",   nationalTotal: 385,    nationalYearStart: 342 },
-  { id: "active_cust",   name: "活跃客户",        indent: 1, category: "customer",    unit: "万户", comparisonType: "较年初", nationalTotal: 4215,   nationalYearStart: 3980 },
-  { id: "quick_cust",    name: "快捷交易客户",     indent: 1, category: "customer",    unit: "万户", comparisonType: "同比",   nationalTotal: 2870,   nationalYearStart: 2640 },
-  { id: "total_consume", name: "总消费额",         indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 3256,   nationalYearStart: 2985 },
-  { id: "installment",   name: "信用卡分期消费额",  indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 1124,   nationalYearStart: 1038 },
-  { id: "auto_inst",     name: "其中：汽车分期",    indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 286,    nationalYearStart: 258 },
-  { id: "home_inst",     name: "家装分期",         indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 178,    nationalYearStart: 165 },
-  { id: "e_inst",        name: "中银e分期",        indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 412,    nationalYearStart: 368 },
-  { id: "card_consume",  name: "信用卡消费额",     indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 1865,   nationalYearStart: 1720 },
-  { id: "normal_consume",name: "其中：普通消费额",  indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 1120,   nationalYearStart: 1042 },
-  { id: "merchant_inst", name: "商户分期",         indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 425,    nationalYearStart: 390 },
-  { id: "card_inst",     name: "卡户分期",         indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 320,    nationalYearStart: 288 },
-  { id: "quick_consume", name: "快捷消费额",       indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 756,    nationalYearStart: 680 },
-  { id: "cross_consume", name: "跨境消费额",       indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 423,    nationalYearStart: 372 },
-  { id: "loan_balance",  name: "贷款余额",         indent: 0, category: "loan",        unit: "亿元", comparisonType: "较年初", nationalTotal: 5620,   nationalYearStart: 5340 },
-  { id: "npl_balance",   name: "不良余额",         indent: 0, category: "loan",        unit: "亿元", comparisonType: "较年初", nationalTotal: 86.5,   nationalYearStart: 82.1 },
-  { id: "npl_ratio",     name: "不良率",           indent: 0, category: "loan",        unit: "%",   comparisonType: "较年初", nationalTotal: 1.54,   nationalYearStart: 1.54, isRatio: true },
+  { id: "eff_cust",      name: "有效客户",       indent: 0, category: "customer",    unit: "万户", comparisonType: "较年初", nationalTotal: 6832,   nationalYearStart: 6580 },
+  { id: "new_cust",      name: "新增客户",       indent: 1, category: "customer",    unit: "万户", comparisonType: "同比",   nationalTotal: 385,    nationalYearStart: 342 },
+  { id: "active_cust",   name: "活跃客户",       indent: 1, category: "customer",    unit: "万户", comparisonType: "较年初", nationalTotal: 4215,   nationalYearStart: 3980 },
+  { id: "quick_cust",    name: "快捷交易客户",    indent: 1, category: "customer",    unit: "万户", comparisonType: "同比",   nationalTotal: 2870,   nationalYearStart: 2640 },
+  { id: "total_consume", name: "总消费额",        indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 3256,   nationalYearStart: 2985 },
+  { id: "installment",   name: "信用卡分期消费额", indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 1124,   nationalYearStart: 1038 },
+  { id: "auto_inst",     name: "汽车分期",        indent: 2, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 286,    nationalYearStart: 258 },
+  { id: "home_inst",     name: "家装分期",        indent: 2, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 178,    nationalYearStart: 165 },
+  { id: "e_inst",        name: "中银e分期",       indent: 2, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 412,    nationalYearStart: 368 },
+  { id: "card_consume",  name: "信用卡消费额",    indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 1865,   nationalYearStart: 1720 },
+  { id: "normal_consume",name: "普通消费额",      indent: 2, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 1120,   nationalYearStart: 1042 },
+  { id: "merchant_inst", name: "商户分期",        indent: 2, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 425,    nationalYearStart: 390 },
+  { id: "card_inst",     name: "卡户分期",        indent: 2, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 320,    nationalYearStart: 288 },
+  { id: "quick_consume", name: "快捷消费额",      indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 756,    nationalYearStart: 680 },
+  { id: "cross_consume", name: "跨境消费额",      indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 423,    nationalYearStart: 372 },
+  { id: "loan_balance",  name: "贷款余额",        indent: 0, category: "loan",        unit: "亿元", comparisonType: "较年初", nationalTotal: 5620,   nationalYearStart: 5340 },
+  { id: "npl_balance",   name: "不良余额",        indent: 0, category: "loan",        unit: "亿元", comparisonType: "较年初", nationalTotal: 86.5,   nationalYearStart: 82.1 },
+  { id: "npl_ratio",     name: "不良率",          indent: 0, category: "loan",        unit: "%",   comparisonType: "较年初", nationalTotal: 1.54,   nationalYearStart: 1.54, isRatio: true },
 ]
 
 // ── Compute normalized shares for a specific indicator ────────────
@@ -271,6 +271,174 @@ export function generateIndicators(institutionId: string, dateStr: string): Indi
       growthRank: rank,
     }
   })
+}
+
+// ── Exported helpers ──────────────────────────────────────────────
+export { defs, branchList, BRANCH_COUNT, computeShares, seeded, hashCode, dateFactor, fmtValue, fmtRate }
+
+// ── Trend data: 12 months of national-level data for an indicator ─
+export interface TrendPoint {
+  month: string           // e.g. "2025/03"
+  value: number           // the absolute value for that month
+  growthValue: number     // bar: month-over-month growth amount
+  growthRate: number      // for tooltip: MoM growth rate
+}
+
+const trendMonths = [
+  "2025/03","2025/04","2025/05","2025/06","2025/07","2025/08",
+  "2025/09","2025/10","2025/11","2025/12","2026/01","2026/02",
+]
+
+export function generateTrendData(indicatorId: string, institutionId: string): TrendPoint[] {
+  const def = defs.find(d => d.id === indicatorId)
+  if (!def) return []
+  const isSummary = institutionId === "all"
+
+  // Base value for starting month
+  const baseTotal = def.nationalYearStart * 0.95 // ~start a bit below year-start
+  const growthPerMonth = ((def.nationalTotal / def.nationalYearStart) - 1) / 12
+
+  return trendMonths.map((month, mi) => {
+    // National value grows month by month
+    const monthMultiplier = 1 + growthPerMonth * (mi + 1)
+    // Add seasonal jitter
+    const jitter = 1 + (seeded(hashCode(`trend_${indicatorId}_${month}`)) - 0.5) * 0.04
+    let value = baseTotal * monthMultiplier * jitter
+
+    // If branch selected, scale by that branch's share
+    if (!isSummary) {
+      const shares = computeShares(indicatorId, "cur")
+      const branchIdx = branchList.findIndex(b => b.id === institutionId)
+      if (branchIdx >= 0) {
+        value = value * shares[branchIdx]
+      }
+    }
+
+    // Previous month value for MoM
+    const prevMultiplier = 1 + growthPerMonth * mi
+    const prevJitter = mi > 0
+      ? 1 + (seeded(hashCode(`trend_${indicatorId}_${trendMonths[mi - 1]}`)) - 0.5) * 0.04
+      : 1
+    let prevValue = baseTotal * prevMultiplier * prevJitter
+    if (!isSummary) {
+      const shares = computeShares(indicatorId, "cur")
+      const branchIdx = branchList.findIndex(b => b.id === institutionId)
+      if (branchIdx >= 0) prevValue = prevValue * shares[branchIdx]
+    }
+
+    const growthAmount = value - prevValue
+    const growthRt = prevValue > 0 ? growthAmount / prevValue : 0
+
+    return {
+      month,
+      value: +value.toFixed(2),
+      growthValue: +growthAmount.toFixed(2),
+      growthRate: growthRt,
+    }
+  })
+}
+
+// ── Branch ranking for a specific indicator ───────────────────────
+export interface BranchRankRow {
+  rank: number
+  branchId: string
+  branchName: string
+  value: number
+  valueFormatted: string
+  unit: string
+  growth: number
+  growthFormatted: string
+}
+
+export function generateBranchRanking(indicatorId: string, dateStr: string): BranchRankRow[] {
+  const def = defs.find(d => d.id === indicatorId)
+  if (!def) return []
+
+  const df = dateFactor(dateStr)
+  const sharesCurrent = computeShares(indicatorId, "cur")
+  const sharesYearStart = computeShares(indicatorId, "ys")
+
+  // Apply date drift
+  const adjusted = sharesCurrent.map((s, i) => {
+    const drift = (seeded(hashCode(`${indicatorId}_${branchList[i].id}_drift`)) - 0.5) * 0.001 * (df - 31)
+    return Math.max(0.001, s + drift)
+  })
+  const sumAdj = adjusted.reduce((a, b) => a + b, 0)
+  const normalized = adjusted.map(s => s / sumAdj)
+
+  const rows = branchList.map((b, i) => {
+    const current = def.nationalTotal * normalized[i]
+    const yearStart = def.nationalYearStart * sharesYearStart[i]
+    const growth = yearStart > 0 ? (current - yearStart) / yearStart : 0
+    return {
+      rank: 0,
+      branchId: b.id,
+      branchName: b.name,
+      value: current,
+      valueFormatted: fmtValue(current, def.unit),
+      unit: def.unit,
+      growth,
+      growthFormatted: fmtRate(growth),
+    }
+  })
+
+  // Sort by value descending for ranking
+  rows.sort((a, b) => b.value - a.value)
+  rows.forEach((r, i) => { r.rank = i + 1 })
+  return rows
+}
+
+// ── Branch trend comparison: multiple branches over 12 months ─────
+export interface BranchTrendLine {
+  branchId: string
+  branchName: string
+  color: string
+  data: { month: string; value: number }[]
+}
+
+const COMPARE_COLORS = [
+  "hsl(0, 85%, 46%)", "hsl(220, 70%, 45%)", "hsl(140, 60%, 40%)",
+  "hsl(30, 80%, 55%)", "hsl(270, 60%, 55%)", "hsl(180, 50%, 40%)",
+]
+
+export function generateBranchComparison(
+  indicatorId: string,
+  branchIds: string[]
+): BranchTrendLine[] {
+  const def = defs.find(d => d.id === indicatorId)
+  if (!def) return []
+
+  return branchIds.map((bid, ci) => {
+    const branch = branchList.find(b => b.id === bid) ?? institutions.find(b => b.id === bid)
+    const name = branch?.name ?? bid
+    const shares = computeShares(indicatorId, "cur")
+    const branchIdx = branchList.findIndex(b => b.id === bid)
+    const share = branchIdx >= 0 ? shares[branchIdx] : 1
+
+    const baseTotal = def.nationalYearStart * 0.95
+    const growthPerMonth = ((def.nationalTotal / def.nationalYearStart) - 1) / 12
+
+    const data = trendMonths.map((month, mi) => {
+      const monthMultiplier = 1 + growthPerMonth * (mi + 1)
+      const jitter = 1 + (seeded(hashCode(`trend_${indicatorId}_${month}`)) - 0.5) * 0.04
+      // Per-branch jitter
+      const branchJitter = 1 + (seeded(hashCode(`trend_${indicatorId}_${month}_${bid}`)) - 0.5) * 0.06
+      const value = baseTotal * monthMultiplier * jitter * share * branchJitter
+      return { month, value: +value.toFixed(2) }
+    })
+
+    return {
+      branchId: bid,
+      branchName: name,
+      color: COMPARE_COLORS[ci % COMPARE_COLORS.length],
+      data,
+    }
+  })
+}
+
+// ── Get indicator definition by id ────────────────────────────────
+export function getIndicatorDef(id: string) {
+  return defs.find(d => d.id === id)
 }
 
 // ── Ratio rows (e.g. 不良率) — special handling ──────────────────
