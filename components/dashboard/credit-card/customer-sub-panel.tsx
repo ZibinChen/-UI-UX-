@@ -7,6 +7,7 @@ import { generateIndicators } from "@/lib/credit-card-data"
 interface CustomerSubPanelProps {
   selectedInstitution: string
   selectedDate: string
+  sectionTitle: string
 }
 
 const kpiDefs = [
@@ -16,7 +17,7 @@ const kpiDefs = [
   { id: "quick_cust", label: "快捷交易客户", parentId: "eff_cust" },
 ]
 
-export function CustomerSubPanel({ selectedInstitution, selectedDate }: CustomerSubPanelProps) {
+export function CustomerSubPanel({ selectedInstitution, selectedDate, sectionTitle }: CustomerSubPanelProps) {
   const indicators = useMemo(
     () => generateIndicators(selectedInstitution, selectedDate).filter(r => r.category === "customer"),
     [selectedInstitution, selectedDate]
@@ -28,6 +29,7 @@ export function CustomerSubPanel({ selectedInstitution, selectedDate }: Customer
       indicators={indicators}
       selectedInstitution={selectedInstitution}
       selectedDate={selectedDate}
+      sectionTitle={sectionTitle}
     />
   )
 }

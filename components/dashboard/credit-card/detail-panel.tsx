@@ -1,26 +1,23 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils"
-import { ArrowUp, ArrowDown } from "lucide-react"
+import { ArrowUp, ArrowDown, ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react"
 import {
-  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip as RTooltip, ResponsiveContainer, ReferenceLine, Legend,
-  LineChart,
 } from "recharts"
-import type {
-  IndicatorRow, TrendPoint, BranchRankRow, BranchTrendLine,
-} from "@/lib/credit-card-data"
+import type { IndicatorRow } from "@/lib/credit-card-data"
 import {
   generateTrendData, generateBranchRanking, generateBranchComparison,
-  getIndicatorDef, institutions, branchList,
+  getIndicatorDef, branchList,
 } from "@/lib/credit-card-data"
 
 // ── Types ─────────────────────────────────────────────────────────
 interface KpiDef {
   id: string
   label: string
-  parentId?: string   // if set, this is a "child" card grouped under parentId
+  parentId?: string
 }
 
 interface DetailPanelProps {
@@ -28,6 +25,8 @@ interface DetailPanelProps {
   indicators: IndicatorRow[]
   selectedInstitution: string
   selectedDate: string
+  /** e.g. "信用卡经营指标表 - 有效客户数" */
+  sectionTitle: string
 }
 
 // ── Custom Tooltip ────────────────────────────────────────────────
@@ -38,9 +37,11 @@ function TrendTooltip({ active, payload, label }: any) {
       <p className="font-semibold text-foreground mb-1">{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+          <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.color }} />
           <span className="text-muted-foreground">{p.name}:</span>
-          <span className="font-medium text-foreground tabular-nums">{typeof p.value === "number" ? p.value.toLocaleString() : p.value}</span>
+          <span className="font-medium text-foreground tabular-nums">
+            {typeof p.value === "number" ? p.value.toLocaleString("zh-CN", { maximumFractionDigits: 2 }) : p.value}
+          </span>
         </p>
       ))}
     </div>
@@ -49,39 +50,42 @@ function TrendTooltip({ active, payload, label }: any) {
 
 // ── KPI Sidebar Card ──────────────────────────────────────────────
 function KpiSideCard({
-  row, isActive, onClick, isChild,
+  row, isActive, onClick, depth,
 }: {
   row: IndicatorRow
   isActive: boolean
   onClick: () => void
-  isChild?: boolean
+  depth: number
 }) {
   const isPositive = row.comparisonRaw >= 0
   return (
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left px-3 py-2.5 border-l-[3px] transition-colors rounded-r",
+        "w-full text-left border-l-[3px] transition-colors rounded-r",
         isActive
           ? "border-l-primary bg-primary/5"
           : "border-l-transparent hover:bg-muted/50",
-        isChild && "pl-5"
+        depth === 0 && "px-3 py-2.5",
+        depth === 1 && "pl-6 pr-3 py-2",
+        depth === 2 && "pl-9 pr-3 py-1.5",
       )}
     >
       <p className={cn(
-        "text-xs font-medium",
-        isActive ? "text-primary" : "text-muted-foreground"
+        "font-medium",
+        isActive ? "text-primary" : "text-muted-foreground",
+        depth === 0 ? "text-xs" : "text-[11px]",
       )}>
         {row.name}
       </p>
       <p className={cn(
-        "text-lg font-bold tabular-nums mt-0.5",
-        isActive ? "text-foreground" : "text-foreground"
+        "font-bold tabular-nums mt-0.5",
+        depth === 0 ? "text-lg" : depth === 1 ? "text-base" : "text-sm",
       )}>
         {row.value}
-        <span className="text-xs font-normal text-muted-foreground ml-1">{row.unit}</span>
+        <span className="text-[10px] font-normal text-muted-foreground ml-1">{row.unit}</span>
       </p>
-      <p className="text-xs mt-0.5">
+      <p className="text-[11px] mt-0.5">
         <span className="text-muted-foreground">{row.comparisonType} </span>
         <span className={cn("font-semibold tabular-nums", isPositive ? "text-primary" : "text-bank-green")}>
           {row.comparison}
@@ -91,13 +95,67 @@ function KpiSideCard({
   )
 }
 
+// ── Sortable column header ────────────────────────────────────────
+type SortField = "value" | "growth"
+type SortDir = "asc" | "desc"
+
+function SortHeader({
+  label, field, currentField, currentDir, onSort,
+}: {
+  label: string; field: SortField
+  currentField: SortField | null; currentDir: SortDir
+  onSort: (field: SortField) => void
+}) {
+  const isActive = currentField === field
+  return (
+    <button
+      className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+      onClick={() => onSort(field)}
+    >
+      <span>{label}</span>
+      {isActive ? (
+        currentDir === "desc"
+          ? <ChevronDown className="h-3 w-3 text-primary" />
+          : <ChevronUp className="h-3 w-3 text-primary" />
+      ) : (
+        <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+      )}
+    </button>
+  )
+}
+
+// ── Depth helper ──────────────────────────────────────────────────
+function getDepth(kd: KpiDef, kpiDefs: KpiDef[]): number {
+  let d = 0
+  let current = kd
+  while (current.parentId) {
+    d++
+    const parent = kpiDefs.find(k => k.id === current.parentId)
+    if (!parent) break
+    current = parent
+  }
+  return d
+}
+
 // ── Main Detail Panel ─────────────────────────────────────────────
 export function DetailPanel({
-  kpiDefs, indicators, selectedInstitution, selectedDate,
+  kpiDefs, indicators, selectedInstitution, selectedDate, sectionTitle,
 }: DetailPanelProps) {
-  // Find first top-level KPI as default
   const topLevel = kpiDefs.filter(k => !k.parentId)
   const [activeKpi, setActiveKpi] = useState(topLevel[0]?.id ?? kpiDefs[0]?.id)
+
+  // Sorting state for ranking table
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>("desc")
+
+  const handleSort = useCallback((field: SortField) => {
+    if (sortField === field) {
+      setSortDir(prev => prev === "desc" ? "asc" : "desc")
+    } else {
+      setSortField(field)
+      setSortDir("desc")
+    }
+  }, [sortField])
 
   // Map indicator rows by id
   const rowMap = useMemo(() => {
@@ -109,96 +167,130 @@ export function DetailPanel({
   const activeRow = rowMap.get(activeKpi)
   const activeDef = getIndicatorDef(activeKpi)
 
-  // Generate trend & ranking for active indicator
+  // Trend data
   const trendData = useMemo(
     () => generateTrendData(activeKpi, selectedInstitution),
     [activeKpi, selectedInstitution]
   )
 
-  const rankingData = useMemo(
-    () => generateBranchRanking(activeKpi, selectedDate),
+  // Branch ranking for active indicator + sorted
+  const rankingData = useMemo(() => {
+    const rows = generateBranchRanking(activeKpi, selectedDate)
+    if (!sortField) return rows
+    const sorted = [...rows]
+    sorted.sort((a, b) => {
+      const va = sortField === "value" ? a.value : a.growth
+      const vb = sortField === "value" ? b.value : b.growth
+      return sortDir === "desc" ? vb - va : va - vb
+    })
+    // Re-rank after sort
+    sorted.forEach((r, i) => { r.rank = i + 1 })
+    return sorted
+  }, [activeKpi, selectedDate, sortField, sortDir])
+
+  // Branch trend comparison (top 5)
+  const [showComparison, setShowComparison] = useState(false)
+  const topBranchIds = useMemo(
+    () => generateBranchRanking(activeKpi, selectedDate).slice(0, 5).map(r => r.branchId),
     [activeKpi, selectedDate]
   )
-
-  // Branch comparison: pick top-5 branches for comparison
-  const [showComparison, setShowComparison] = useState(false)
-  const topBranchIds = useMemo(() => {
-    return rankingData.slice(0, 5).map(r => r.branchId)
-  }, [rankingData])
-
   const comparisonData = useMemo(
     () => generateBranchComparison(activeKpi, topBranchIds),
     [activeKpi, topBranchIds]
   )
 
+  const compLabel = activeRow?.comparisonType === "较年初" ? "较年初增长" : "同比增长"
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Top area: KPI cards (left) + Trend chart (right) */}
+      {/* Section title */}
+      <h3 className="text-sm font-semibold text-foreground">{sectionTitle}</h3>
+
+      {/* Top area: KPI cards (left) + Trend charts (right) */}
       <div className="bg-card rounded border border-border overflow-hidden">
         <div className="flex">
           {/* KPI sidebar */}
-          <div className="w-[200px] shrink-0 border-r border-border py-2 flex flex-col gap-0.5 overflow-y-auto max-h-[400px]">
+          <div className="w-[200px] shrink-0 border-r border-border py-2 flex flex-col gap-0.5 overflow-y-auto max-h-[500px]">
             {kpiDefs.map(kd => {
               const row = rowMap.get(kd.id)
               if (!row) return null
+              const depth = getDepth(kd, kpiDefs)
               return (
                 <KpiSideCard
                   key={kd.id}
                   row={row}
                   isActive={activeKpi === kd.id}
-                  isChild={!!kd.parentId}
+                  depth={depth}
                   onClick={() => setActiveKpi(kd.id)}
                 />
               )
             })}
           </div>
 
-          {/* Trend chart */}
-          <div className="flex-1 p-4">
-            <h4 className="text-sm font-semibold text-foreground mb-3">
-              {activeRow?.name ?? ""}月趋势
-            </h4>
-            <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
-                  tickFormatter={v => v.split("/")[1] + "月"}
-                />
-                <YAxis
-                  yAxisId="left"
-                  tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
-                  tickFormatter={v => v.toLocaleString()}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
-                  tickFormatter={v => v.toLocaleString()}
-                />
-                <RTooltip content={<TrendTooltip />} />
-                <ReferenceLine yAxisId="right" y={0} stroke="hsl(0,0%,80%)" />
-                <Bar
-                  yAxisId="right"
-                  dataKey="growthValue"
-                  name="较上月增长"
-                  fill="hsl(0, 85%, 46%)"
-                  radius={[2, 2, 0, 0]}
-                  barSize={24}
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="value"
-                  name={activeRow?.name ?? ""}
-                  stroke="hsl(220, 70%, 45%)"
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: "hsl(220, 70%, 45%)" }}
-                  activeDot={{ r: 5 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+          {/* Right: two charts stacked */}
+          <div className="flex-1 p-4 flex flex-col gap-6">
+            {/* Top chart: indicator value trend (blue line) */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-1">
+                {activeRow?.name ?? ""}月趋势
+              </h4>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                {"单位: "}{activeRow?.unit ?? ""}
+              </p>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
+                    tickFormatter={v => v.split("/")[1] + "月"}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
+                    tickFormatter={v => v.toLocaleString()}
+                  />
+                  <RTooltip content={<TrendTooltip />} />
+                  <Legend verticalAlign="top" height={28} wrapperStyle={{ fontSize: 12 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    name={activeRow?.name ?? ""}
+                    stroke="hsl(220, 70%, 45%)"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "hsl(220, 70%, 45%)" }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Bottom chart: MoM growth bars (red/green) */}
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-2">较上月增长</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
+                    tickFormatter={v => v.split("/")[1] + "月"}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
+                    tickFormatter={v => v.toLocaleString()}
+                  />
+                  <RTooltip content={<TrendTooltip />} />
+                  <ReferenceLine y={0} stroke="hsl(0,0%,75%)" />
+                  <Bar
+                    dataKey="growthValue"
+                    name="较上月增长"
+                    radius={[2, 2, 0, 0]}
+                    barSize={28}
+                    fill="hsl(0, 85%, 46%)"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
@@ -206,7 +298,9 @@ export function DetailPanel({
       {/* Branch Ranking Table */}
       <div className="bg-card rounded border border-border overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-foreground">下辖机构排名</h4>
+          <h4 className="text-sm font-semibold text-foreground">
+            下辖机构排名 — {activeRow?.name ?? ""}
+          </h4>
           <button
             onClick={() => setShowComparison(!showComparison)}
             className={cn(
@@ -224,13 +318,29 @@ export function DetailPanel({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted">
-                <th className="text-center px-3 py-2 font-semibold text-foreground border-b border-border w-[60px]">序号</th>
-                <th className="text-left px-3 py-2 font-semibold text-foreground border-b border-border">机构</th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
-                  {activeRow?.name ?? ""} {activeRow?.unit ? `(${activeRow.unit})` : ""}
+                <th className="text-center px-3 py-2 font-semibold text-foreground border-b border-border w-[60px]">
+                  序号
                 </th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border w-[120px]">
-                  {activeRow?.comparisonType === "较年初" ? "较年初增长" : "同比增长"}
+                <th className="text-left px-3 py-2 font-semibold text-foreground border-b border-border">
+                  机构
+                </th>
+                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
+                  <SortHeader
+                    label={`${activeRow?.name ?? ""} (${activeRow?.unit ?? ""})`}
+                    field="value"
+                    currentField={sortField}
+                    currentDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border w-[130px]">
+                  <SortHeader
+                    label={compLabel}
+                    field="growth"
+                    currentField={sortField}
+                    currentDir={sortDir}
+                    onSort={handleSort}
+                  />
                 </th>
               </tr>
             </thead>
@@ -295,11 +405,7 @@ export function DetailPanel({
               />
               <YAxis tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
               <RTooltip content={<TrendTooltip />} />
-              <Legend
-                verticalAlign="top"
-                height={36}
-                wrapperStyle={{ fontSize: 12 }}
-              />
+              <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: 12 }} />
               {comparisonData.map((line) => (
                 <Line
                   key={line.branchId}

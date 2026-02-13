@@ -72,6 +72,7 @@ export function CreditCardPanel({ selectedInstitution, selectedDate }: CreditCar
         <CustomerSubPanel
           selectedInstitution={selectedInstitution}
           selectedDate={selectedDate}
+          sectionTitle={`信用卡经营指标表 - 有效客户数（${titleDate}）`}
         />
       )}
 
@@ -79,6 +80,7 @@ export function CreditCardPanel({ selectedInstitution, selectedDate }: CreditCar
         <ConsumptionSubPanel
           selectedInstitution={selectedInstitution}
           selectedDate={selectedDate}
+          sectionTitle={`信用卡经营指标表 - 消费额类别（${titleDate}）`}
         />
       )}
 
@@ -86,6 +88,7 @@ export function CreditCardPanel({ selectedInstitution, selectedDate }: CreditCar
         <LoanSubPanel
           selectedInstitution={selectedInstitution}
           selectedDate={selectedDate}
+          sectionTitle={`信用卡经营指标表 - 贷款余额和不良余额（${titleDate}）`}
         />
       )}
     </div>

@@ -7,11 +7,9 @@ import { generateIndicators } from "@/lib/credit-card-data"
 interface ConsumptionSubPanelProps {
   selectedInstitution: string
   selectedDate: string
+  sectionTitle: string
 }
 
-// Consumption has many indicators — use parent/child grouping
-// Top level: 总消费额, 信用卡分期消费额, 信用卡消费额, 快捷消费额, 跨境消费额
-// Children nested under their parents
 const kpiDefs = [
   { id: "total_consume", label: "总消费额" },
   { id: "installment", label: "信用卡分期消费额", parentId: "total_consume" },
@@ -26,7 +24,7 @@ const kpiDefs = [
   { id: "cross_consume", label: "跨境消费额", parentId: "total_consume" },
 ]
 
-export function ConsumptionSubPanel({ selectedInstitution, selectedDate }: ConsumptionSubPanelProps) {
+export function ConsumptionSubPanel({ selectedInstitution, selectedDate, sectionTitle }: ConsumptionSubPanelProps) {
   const indicators = useMemo(
     () => generateIndicators(selectedInstitution, selectedDate).filter(r => r.category === "consumption"),
     [selectedInstitution, selectedDate]
@@ -38,6 +36,7 @@ export function ConsumptionSubPanel({ selectedInstitution, selectedDate }: Consu
       indicators={indicators}
       selectedInstitution={selectedInstitution}
       selectedDate={selectedDate}
+      sectionTitle={sectionTitle}
     />
   )
 }
