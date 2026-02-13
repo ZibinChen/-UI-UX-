@@ -1,35 +1,30 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { ArrowUp, ArrowDown } from "lucide-react"
+import { ArrowUp, ArrowDown, Minus } from "lucide-react"
 import type { IndicatorRow } from "@/lib/credit-card-data"
 
 interface IndicatorsTableProps {
   data: IndicatorRow[]
   title?: string
-  isSummary?: boolean // true when 境内分支机构汇总 is selected — hides growth columns
+  isSummary?: boolean
 }
 
-function ComparisonCell({ value, type }: { value: string; type: string }) {
-  const isNegative = value.startsWith("-")
-  return (
-    <div className="flex items-center justify-end gap-1">
-      <span className="text-xs text-muted-foreground shrink-0">{type}</span>
-      <span
-        className={cn(
-          "tabular-nums font-semibold text-sm",
-          isNegative ? "text-bank-green" : "text-primary"
-        )}
-      >
-        {value}
-      </span>
-      {isNegative ? (
-        <ArrowDown className="h-3.5 w-3.5 text-bank-green shrink-0" />
-      ) : (
-        <ArrowUp className="h-3.5 w-3.5 text-primary shrink-0" />
-      )}
-    </div>
-  )
+function ValueArrow({ value }: { value: string }) {
+  const numericStr = value.replace(/[^0-9.\-+]/g, "")
+  const n = parseFloat(numericStr)
+  if (isNaN(n) || Math.abs(n) < 0.005) {
+    return <Minus className="h-3 w-3 text-muted-foreground shrink-0" />
+  }
+  if (n < 0) return <ArrowDown className="h-3 w-3 text-bank-green shrink-0" />
+  return <ArrowUp className="h-3 w-3 text-primary shrink-0" />
+}
+
+function colorClass(value: string): string {
+  const numericStr = value.replace(/[^0-9.\-+]/g, "")
+  const n = parseFloat(numericStr)
+  if (isNaN(n) || Math.abs(n) < 0.005) return "text-muted-foreground"
+  return n < 0 ? "text-bank-green" : "text-primary"
 }
 
 export function IndicatorsTable({ data, title, isSummary = false }: IndicatorsTableProps) {
@@ -44,22 +39,22 @@ export function IndicatorsTable({ data, title, isSummary = false }: IndicatorsTa
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-muted">
-              <th className="text-left px-3 py-2.5 font-semibold text-foreground border-b border-border w-[200px]">
+              <th className="text-left px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
                 业务指标
               </th>
-              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border w-[160px]">
+              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
                 业务量
               </th>
-              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border w-[180px]">
+              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
                 同比/较年初
               </th>
               {!isSummary && (
                 <>
-                  <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border w-[160px]">
+                  <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
                     增速较全辖
                   </th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-foreground border-b border-border w-[80px]">
-                    增速排名
+                  <th className="text-center px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
+                    排名
                   </th>
                 </>
               )}
@@ -68,7 +63,6 @@ export function IndicatorsTable({ data, title, isSummary = false }: IndicatorsTa
           <tbody>
             {data.map((row, index) => {
               const isEvenRow = index % 2 === 0
-              const isGrowthNegative = row.growthVsAll.startsWith("-")
               return (
                 <tr
                   key={row.id}
@@ -80,53 +74,51 @@ export function IndicatorsTable({ data, title, isSummary = false }: IndicatorsTa
                   {/* Indicator name */}
                   <td
                     className={cn(
-                      "px-3 py-2 border-b border-border text-foreground",
+                      "px-3 py-2 border-b border-border text-foreground whitespace-nowrap",
                       row.indent === 0 ? "font-semibold" : "font-normal"
                     )}
-                    style={{
-                      paddingLeft: `${(row.indent ?? 0) * 20 + 12}px`,
-                    }}
+                    style={{ paddingLeft: `${(row.indent ?? 0) * 20 + 12}px` }}
                   >
                     {row.name}
                   </td>
 
                   {/* Value + unit */}
-                  <td className="px-3 py-2 border-b border-border text-right">
-                    <span className="tabular-nums text-foreground font-medium">
-                      {row.value}
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      {row.unit}
-                    </span>
+                  <td className="px-3 py-2 border-b border-border text-right whitespace-nowrap">
+                    <span className="tabular-nums text-foreground font-medium">{row.value}</span>
+                    <span className="text-xs text-muted-foreground ml-1">{row.unit}</span>
                   </td>
 
-                  {/* Comparison — label + value + arrow on same line */}
-                  <td className="px-3 py-2 border-b border-border text-right">
-                    <ComparisonCell value={row.comparison} type={row.comparisonType} />
+                  {/* Comparison */}
+                  <td className="px-3 py-2 border-b border-border text-right whitespace-nowrap">
+                    <div className="inline-flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground">{row.comparisonType}</span>
+                      <span className={cn("tabular-nums font-semibold text-sm", colorClass(row.comparison))}>
+                        {row.comparison}
+                      </span>
+                      <ValueArrow value={row.comparison} />
+                    </div>
                   </td>
 
-                  {/* Growth vs all (hidden for summary) */}
+                  {/* Growth vs national — hidden for summary */}
                   {!isSummary && (
                     <>
-                      <td className="px-3 py-2 border-b border-border text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <span
-                            className={cn(
-                              "tabular-nums font-medium text-sm",
-                              isGrowthNegative ? "text-bank-green" : "text-primary"
-                            )}
-                          >
+                      <td className="px-3 py-2 border-b border-border text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1">
+                          <span className={cn("tabular-nums font-medium text-sm", colorClass(row.growthVsAll))}>
                             {row.growthVsAll}
                           </span>
-                          {isGrowthNegative ? (
-                            <ArrowDown className="h-3.5 w-3.5 text-bank-green shrink-0" />
-                          ) : (
-                            <ArrowUp className="h-3.5 w-3.5 text-primary shrink-0" />
-                          )}
+                          <ValueArrow value={row.growthVsAll} />
                         </div>
                       </td>
-                      <td className="px-3 py-2 border-b border-border text-center tabular-nums font-medium text-foreground">
-                        {row.growthRank}
+                      <td className="px-3 py-2 border-b border-border text-center whitespace-nowrap">
+                        <span
+                          className={cn(
+                            "tabular-nums font-semibold text-sm",
+                            row.growthRank <= 3 ? "text-primary" : row.growthRank >= 34 ? "text-bank-green" : "text-foreground"
+                          )}
+                        >
+                          {row.growthRank}/{data.length > 0 ? 36 : 0}
+                        </span>
                       </td>
                     </>
                   )}
