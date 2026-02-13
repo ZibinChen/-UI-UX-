@@ -5,23 +5,16 @@ import { Header } from "./header"
 import { Sidebar } from "./sidebar"
 import { FilterBar } from "./filter-bar"
 import { TabNavigation } from "./tab-navigation"
-import { AssetsPanel } from "./panels/assets-panel"
-import { CustomersPanel } from "./panels/customers-panel"
 import { CreditCardPanel } from "./panels/credit-card-panel"
-import { PlaceholderPanel } from "./panels/placeholder-panel"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 const mainTabs = [
-  { id: "credit-card", label: "信用卡经营" },
-  { id: "assets", label: "资产负债" },
-  { id: "customers", label: "客户基础" },
-  { id: "performance", label: "经营效益" },
-  { id: "quality", label: "资产质量" },
+  { id: "comprehensive", label: "综合经营计划" },
 ]
 
 export function DashboardShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
-  const [activeMainTab, setActiveMainTab] = useState("credit-card")
+  const [activeMainTab, setActiveMainTab] = useState("comprehensive")
   const [activeSidebarItem, setActiveSidebarItem] = useState("assets")
   const [selectedInstitution, setSelectedInstitution] = useState("all")
   const [selectedDate, setSelectedDate] = useState("2026/02/12")
@@ -58,16 +51,12 @@ export function DashboardShell() {
           {/* Content */}
           <ScrollArea className="flex-1">
             <div className="p-6">
-              {activeMainTab === "credit-card" && (
+              {activeMainTab === "comprehensive" && (
                 <CreditCardPanel
                   selectedInstitution={selectedInstitution}
                   selectedDate={selectedDate}
                 />
               )}
-              {activeMainTab === "assets" && <AssetsPanel />}
-              {activeMainTab === "customers" && <CustomersPanel />}
-              {activeMainTab === "performance" && <PlaceholderPanel title="经营效益" />}
-              {activeMainTab === "quality" && <PlaceholderPanel title="资产质量" />}
             </div>
           </ScrollArea>
         </main>

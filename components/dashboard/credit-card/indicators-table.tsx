@@ -10,21 +10,17 @@ interface IndicatorsTableProps {
   isSummary?: boolean
 }
 
-function ValueArrow({ value }: { value: string }) {
-  const numericStr = value.replace(/[^0-9.\-+]/g, "")
-  const n = parseFloat(numericStr)
-  if (isNaN(n) || Math.abs(n) < 0.005) {
+function ValueArrow({ raw }: { raw: number }) {
+  if (Math.abs(raw) < 0.001) {
     return <Minus className="h-3 w-3 text-muted-foreground shrink-0" />
   }
-  if (n < 0) return <ArrowDown className="h-3 w-3 text-bank-green shrink-0" />
+  if (raw < 0) return <ArrowDown className="h-3 w-3 text-bank-green shrink-0" />
   return <ArrowUp className="h-3 w-3 text-primary shrink-0" />
 }
 
-function colorClass(value: string): string {
-  const numericStr = value.replace(/[^0-9.\-+]/g, "")
-  const n = parseFloat(numericStr)
-  if (isNaN(n) || Math.abs(n) < 0.005) return "text-muted-foreground"
-  return n < 0 ? "text-bank-green" : "text-primary"
+function colorClass(raw: number): string {
+  if (Math.abs(raw) < 0.001) return "text-muted-foreground"
+  return raw < 0 ? "text-bank-green" : "text-primary"
 }
 
 export function IndicatorsTable({ data, title, isSummary = false }: IndicatorsTableProps) {
@@ -39,22 +35,22 @@ export function IndicatorsTable({ data, title, isSummary = false }: IndicatorsTa
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-muted">
-              <th className="text-left px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
+              <th className="text-left px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap min-w-[140px]">
                 业务指标
               </th>
-              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
+              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap min-w-[120px]">
                 业务量
               </th>
-              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
+              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap min-w-[140px]">
                 同比/较年初
               </th>
               {!isSummary && (
                 <>
-                  <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
+                  <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap min-w-[120px]">
                     增速较全辖
                   </th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap">
-                    排名
+                  <th className="text-center px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap min-w-[80px]">
+                    增速排名
                   </th>
                 </>
               )}
@@ -92,29 +88,33 @@ export function IndicatorsTable({ data, title, isSummary = false }: IndicatorsTa
                   <td className="px-3 py-2 border-b border-border text-right whitespace-nowrap">
                     <div className="inline-flex items-center gap-1">
                       <span className="text-xs text-muted-foreground">{row.comparisonType}</span>
-                      <span className={cn("tabular-nums font-semibold text-sm", colorClass(row.comparison))}>
+                      <span className={cn("tabular-nums font-semibold text-sm", colorClass(row.comparisonRaw))}>
                         {row.comparison}
                       </span>
-                      <ValueArrow value={row.comparison} />
+                      <ValueArrow raw={row.comparisonRaw} />
                     </div>
                   </td>
 
-                  {/* Growth vs national — hidden for summary */}
+                  {/* Growth vs national + rank — only for branch view */}
                   {!isSummary && (
                     <>
                       <td className="px-3 py-2 border-b border-border text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1">
-                          <span className={cn("tabular-nums font-medium text-sm", colorClass(row.growthVsAll))}>
+                          <span className={cn("tabular-nums font-medium text-sm", colorClass(row.growthVsAllRaw))}>
                             {row.growthVsAll}
                           </span>
-                          <ValueArrow value={row.growthVsAll} />
+                          <ValueArrow raw={row.growthVsAllRaw} />
                         </div>
                       </td>
                       <td className="px-3 py-2 border-b border-border text-center whitespace-nowrap">
                         <span
                           className={cn(
                             "tabular-nums font-semibold text-sm",
-                            row.growthRank <= 3 ? "text-primary" : row.growthRank >= 34 ? "text-bank-green" : "text-foreground"
+                            row.growthRank <= 3
+                              ? "text-primary"
+                              : row.growthRank >= 34
+                                ? "text-bank-green"
+                                : "text-foreground"
                           )}
                         >
                           {row.growthRank}/36

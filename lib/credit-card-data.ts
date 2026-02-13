@@ -1,14 +1,14 @@
 // ====================================================================
-// Credit Card Business Indicators — deterministic data engine v3
+// Credit Card Business Indicators — deterministic data engine v4
 // ====================================================================
-// Key principles:
-//   1. Define a NATIONAL TOTAL for each indicator first.
-//   2. Distribute the total among 36 branches using weighted shares
-//      (seeded by branch hash) so branch values always sum to the total.
-//   3. Each branch has its own growth rate in a realistic range.
-//      The national growth rate is the weighted average.
-//   4. Rankings are computed by sorting branches by growth rate.
-//   5. Changing dates shifts the growth rates slightly.
+// Approach:
+//   1. Define NATIONAL TOTALS for current period and year-start.
+//   2. Compute each branch's SHARE of the national total (sums to 1.0).
+//   3. Branch current value = nationalTotal * share[branch].
+//   4. Branch year-start value = nationalYearStart * shareYearStart[branch].
+//   5. Growth rate is derived from (current - yearStart) / yearStart.
+//   6. Summary row = exact nationalTotal (which equals sum of branch values).
+//   7. Rankings come from sorting branch growth rates.
 // ====================================================================
 
 export interface IndicatorRow {
@@ -23,6 +23,7 @@ export interface IndicatorRow {
   comparison: string
   comparisonRaw: number
   growthVsAll: string
+  growthVsAllRaw: number
   growthRank: number
 }
 
@@ -68,7 +69,7 @@ export const institutions: { id: string; name: string }[] = [
 ]
 
 const branchList = institutions.filter((i) => i.id !== "all")
-const BRANCH_COUNT = branchList.length
+const BRANCH_COUNT = branchList.length // 36
 
 // ── Available dates ───────────────────────────────────────────────
 export const availableDates: string[] = [
@@ -76,7 +77,7 @@ export const availableDates: string[] = [
   ...Array.from({ length: 12 }, (_, i) => `2026/02/${String(i + 1).padStart(2, "0")}`),
 ]
 
-// ── Deterministic hash / random ───────────────────────────────────
+// ── Deterministic seeded random ───────────────────────────────────
 function hashCode(s: string): number {
   let h = 0
   for (let i = 0; i < s.length; i++) {
@@ -90,6 +91,18 @@ function seeded(seed: number): number {
   return x - Math.floor(x) // 0..1
 }
 
+// ── Province economic weight (determines share of national total) ─
+const WEIGHT: Record<string, number> = {
+  guangdong: 9.0, jiangsu: 7.5, zhejiang: 6.5, shandong: 5.5, beijing: 5.0,
+  shanghai: 5.0, sichuan: 4.0, henan: 3.5, hubei: 3.2, hunan: 3.0,
+  fujian: 3.0, hebei: 2.8, shenzhen: 3.5, anhui: 2.5, liaoning: 2.2,
+  chongqing: 2.0, shaanxi: 1.8, yunnan: 1.6, guangxi: 1.5, jiangxi: 1.5,
+  heilongjiang: 1.3, tianjin: 1.2, shanxi: 1.1, guizhou: 1.0, jilin: 0.9,
+  neimenggu: 0.9, xinjiang: 0.8, gansu: 0.6, hainan: 0.6,
+  qinghai: 0.3, ningxia: 0.3, xizang: 0.15,
+  ningbo: 1.2, dalian: 1.0, qingdao: 1.1, xiamen: 0.8,
+}
+
 // ── Indicator definitions ─────────────────────────────────────────
 interface Def {
   id: string
@@ -98,19 +111,16 @@ interface Def {
   category: "customer" | "consumption" | "loan"
   unit: string
   comparisonType: string
-  nationalTotal: number      // the fixed national total (current period)
-  nationalYearStart: number  // national total at year start
-  isRatio?: boolean          // for "不良率" — not summed but averaged
+  nationalTotal: number
+  nationalYearStart: number
+  isRatio?: boolean
 }
 
-// Realistic national-level numbers for a large bank
 const defs: Def[] = [
-  // ── 有效客户 (万户) ──
   { id: "eff_cust",      name: "有效客户",        indent: 0, category: "customer",    unit: "万户", comparisonType: "较年初", nationalTotal: 6832,   nationalYearStart: 6580 },
   { id: "new_cust",      name: "其中：新增客户",   indent: 1, category: "customer",    unit: "万户", comparisonType: "同比",   nationalTotal: 385,    nationalYearStart: 342 },
   { id: "active_cust",   name: "活跃客户",        indent: 1, category: "customer",    unit: "万户", comparisonType: "较年初", nationalTotal: 4215,   nationalYearStart: 3980 },
   { id: "quick_cust",    name: "快捷交易客户",     indent: 1, category: "customer",    unit: "万户", comparisonType: "同比",   nationalTotal: 2870,   nationalYearStart: 2640 },
-  // ── 消费额 (亿元) ──
   { id: "total_consume", name: "总消费额",         indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 3256,   nationalYearStart: 2985 },
   { id: "installment",   name: "信用卡分期消费额",  indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 1124,   nationalYearStart: 1038 },
   { id: "auto_inst",     name: "其中：汽车分期",    indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 286,    nationalYearStart: 258 },
@@ -122,91 +132,40 @@ const defs: Def[] = [
   { id: "card_inst",     name: "卡户分期",         indent: 1, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 320,    nationalYearStart: 288 },
   { id: "quick_consume", name: "快捷消费额",       indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 756,    nationalYearStart: 680 },
   { id: "cross_consume", name: "跨境消费额",       indent: 0, category: "consumption", unit: "亿元", comparisonType: "同比",   nationalTotal: 423,    nationalYearStart: 372 },
-  // ── 贷款 & 不良 ──
   { id: "loan_balance",  name: "贷款余额",         indent: 0, category: "loan",        unit: "亿元", comparisonType: "较年初", nationalTotal: 5620,   nationalYearStart: 5340 },
   { id: "npl_balance",   name: "不良余额",         indent: 0, category: "loan",        unit: "亿元", comparisonType: "较年初", nationalTotal: 86.5,   nationalYearStart: 82.1 },
   { id: "npl_ratio",     name: "不良率",           indent: 0, category: "loan",        unit: "%",   comparisonType: "较年初", nationalTotal: 1.54,   nationalYearStart: 1.54, isRatio: true },
 ]
 
-// ── Branch share distribution ─────────────────────────────────────
-// Generate a weight for each branch, then normalize so all shares sum to 1.
-// Big provinces (guangdong, jiangsu, zhejiang, beijing, shanghai) get larger
-// shares, small ones (xizang, qinghai, ningxia) get smaller shares.
+// ── Compute normalized shares for a specific indicator ────────────
+// Each branch gets a weight-based share with per-indicator jitter.
+// Two separate share vectors: one for current, one for year-start,
+// so that different branches grow at different rates.
 
-const SIZE_BONUS: Record<string, number> = {
-  guangdong: 3.5, jiangsu: 3.0, zhejiang: 2.8, beijing: 2.5, shanghai: 2.5,
-  shandong: 2.3, sichuan: 2.0, henan: 1.8, hubei: 1.6, hunan: 1.5,
-  fujian: 1.5, hebei: 1.4, shenzhen: 1.8, anhui: 1.3, liaoning: 1.2,
-  chongqing: 1.1, shaanxi: 1.0, yunnan: 1.0, guangxi: 0.9,
-  jiangxi: 0.9, heilongjiang: 0.8, jilin: 0.6, guizhou: 0.7,
-  neimenggu: 0.6, xinjiang: 0.5, gansu: 0.4, hainan: 0.4,
-  tianjin: 0.8, shanxi: 0.7, qinghai: 0.25, ningxia: 0.25, xizang: 0.15,
-  ningbo: 0.7, dalian: 0.6, qingdao: 0.7, xiamen: 0.5,
-}
-
-function getBranchShares(): Map<string, number> {
-  let total = 0
-  const raw = new Map<string, number>()
-  for (const b of branchList) {
-    const base = SIZE_BONUS[b.id] ?? 0.5
-    // add a small hash jitter so each indicator won't have identical shares
-    const w = base + seeded(hashCode(b.id)) * 0.2
-    raw.set(b.id, w)
-    total += w
-  }
-  const shares = new Map<string, number>()
-  for (const [k, v] of raw) {
-    shares.set(k, v / total)
-  }
-  return shares
-}
-
-// Per-indicator shares: multiply the base share by a per-indicator jitter
-function getIndicatorShares(indicatorId: string): Map<string, number> {
-  const baseShares = getBranchShares()
-  const result = new Map<string, number>()
+function computeShares(indicatorId: string, suffix: string): number[] {
+  const raw: number[] = []
   let total = 0
   for (const b of branchList) {
-    const base = baseShares.get(b.id) ?? (1 / BRANCH_COUNT)
-    // jitter: +-20% variation per indicator
-    const jitter = 0.8 + seeded(hashCode(`${indicatorId}_${b.id}_share`)) * 0.4
+    const base = WEIGHT[b.id] ?? 0.5
+    const jitter = 0.85 + seeded(hashCode(`${indicatorId}_${b.id}_${suffix}`)) * 0.30
     const v = base * jitter
-    result.set(b.id, v)
+    raw.push(v)
     total += v
   }
-  // re-normalize
-  for (const [k, v] of result) {
-    result.set(k, v / total)
-  }
-  return result
+  return raw.map((v) => v / total)
 }
 
-// ── Branch growth rates ───────────────────────────────────────────
-// Each branch has a unique growth rate that varies by indicator.
-// National growth = (nationalTotal - nationalYearStart) / nationalYearStart.
-// Branch growth rates are distributed around the national growth.
-
-function getBranchGrowth(indicatorId: string, branchId: string, nationalGrowth: number, dateOffset: number): number {
-  const s = seeded(hashCode(`${indicatorId}_${branchId}_growth`))
-  // spread: some branches grow faster, some slower
-  // range: national growth +/- 15pp, clamped to [-20%, +40%]
-  const deviation = (s - 0.5) * 0.30  // -15pp to +15pp
-  const dateShift = (dateOffset - 31) * 0.0003 * (s > 0.5 ? 1 : -1)
-  const rate = nationalGrowth + deviation + dateShift
-  return Math.max(-0.20, Math.min(0.40, rate))
-}
-
-// ── Day offset from date string ───────────────────────────────────
-function dayOffset(dateStr: string): number {
+// ── Date factor: tiny daily drift ─────────────────────────────────
+function dateFactor(dateStr: string): number {
   const parts = dateStr.split("/").map(Number)
-  return (parts[1] - 1) * 31 + parts[2] // approximate day of year
+  // days since 2026/01/01
+  return (parts[1] - 1) * 31 + parts[2]
 }
 
 // ── Formatting ────────────────────────────────────────────────────
 function fmtValue(v: number, unit: string): string {
   if (unit === "%") return v.toFixed(2)
-  if (v >= 1000) return v.toFixed(2)
-  if (v >= 100) return v.toFixed(2)
+  if (Math.abs(v) >= 100) return v.toFixed(2)
   return v.toFixed(2)
 }
 
@@ -219,128 +178,166 @@ function fmtPp(pp: number): string {
   return `${pp >= 0 ? "+" : ""}${pp.toFixed(2)}pp`
 }
 
-// ── Public API ────────────────────────────────────────────────────
+// ── Main generation function ──────────────────────────────────────
 
 export function generateIndicators(institutionId: string, dateStr: string): IndicatorRow[] {
-  const dOffset = dayOffset(dateStr)
   const isSummary = institutionId === "all"
-
-  // Pre-compute all branch data for ranking & growth-vs-national
-  type BranchCalc = {
-    branchId: string
-    currentValue: number
-    yearStartValue: number
-    growthRate: number
-  }
+  const df = dateFactor(dateStr)
 
   return defs.map((def) => {
-    const natGrowth = (def.nationalTotal - def.nationalYearStart) / def.nationalYearStart
-    const shares = getIndicatorShares(def.id)
+    if (def.isRatio) {
+      return generateRatioRow(def, institutionId, isSummary, df)
+    }
 
-    // Compute each branch's values
-    const branches: BranchCalc[] = branchList.map((b) => {
-      const share = shares.get(b.id) ?? (1 / BRANCH_COUNT)
-      const growth = def.isRatio
-        ? getBranchGrowth(def.id, b.id, 0, dOffset) * 0.1 // ratio change is small: +-2pp
-        : getBranchGrowth(def.id, b.id, natGrowth, dOffset)
+    // ── Step 1: Compute shares for current & year-start ──
+    const sharesCurrent = computeShares(def.id, "cur")
+    const sharesYearStart = computeShares(def.id, "ys")
 
-      if (def.isRatio) {
-        // For ratio: each branch has its own ratio around the national ratio
-        const branchRatio = def.nationalYearStart + (seeded(hashCode(`${def.id}_${b.id}_ratiobase`)) - 0.5) * 0.8
-        const currentRatio = branchRatio + growth
-        return {
-          branchId: b.id,
-          currentValue: Math.max(0.1, currentRatio),
-          yearStartValue: branchRatio,
-          growthRate: growth, // for ratio, "growth" is absolute change in pp
-        }
-      }
+    // ── Step 2: Tiny per-branch daily drift ──
+    // Each branch's current share gets a tiny date-dependent nudge
+    // so values change slightly when the user changes the date.
+    const adjustedSharesCurrent = sharesCurrent.map((s, i) => {
+      const drift = (seeded(hashCode(`${def.id}_${branchList[i].id}_drift`)) - 0.5) * 0.001 * (df - 31)
+      return Math.max(0.001, s + drift)
+    })
+    // Re-normalize
+    const sumAdj = adjustedSharesCurrent.reduce((a, b) => a + b, 0)
+    const normalizedCurrent = adjustedSharesCurrent.map((s) => s / sumAdj)
 
-      const yearStart = def.nationalYearStart * share
-      const current = yearStart * (1 + growth)
-      return {
-        branchId: b.id,
-        currentValue: current,
-        yearStartValue: yearStart,
-        growthRate: growth,
-      }
+    // ── Step 3: Branch values ──
+    // branch_current  = nationalTotal * normalizedCurrent[i]
+    // branch_yearStart = nationalYearStart * sharesYearStart[i]
+    // This guarantees: sum(branch_current) === nationalTotal
+    //                  sum(branch_yearStart) === nationalYearStart
+
+    type BranchData = {
+      id: string
+      current: number
+      yearStart: number
+      growth: number
+    }
+
+    const branches: BranchData[] = branchList.map((b, i) => {
+      const current = def.nationalTotal * normalizedCurrent[i]
+      const yearStart = def.nationalYearStart * sharesYearStart[i]
+      const growth = yearStart > 0 ? (current - yearStart) / yearStart : 0
+      return { id: b.id, current, yearStart, growth }
     })
 
-    // Sort by growth rate for ranking
-    const sorted = [...branches].sort((a, b) => b.growthRate - a.growthRate)
+    // ── Step 4: National growth (from the defined totals) ──
+    const nationalGrowth = (def.nationalTotal - def.nationalYearStart) / def.nationalYearStart
+
+    // ── Step 5: Rank branches by growth rate ──
+    const sorted = [...branches].sort((a, b) => b.growth - a.growth)
     const rankMap = new Map<string, number>()
-    sorted.forEach((b, i) => rankMap.set(b.branchId, i + 1))
+    sorted.forEach((b, i) => rankMap.set(b.id, i + 1))
 
-    // National average growth rate (weighted for non-ratio, simple avg for ratio)
-    let natAvgGrowth: number
-    if (def.isRatio) {
-      natAvgGrowth = branches.reduce((s, b) => s + b.growthRate, 0) / BRANCH_COUNT
-    } else {
-      const totalCurrent = branches.reduce((s, b) => s + b.currentValue, 0)
-      const totalYearStart = branches.reduce((s, b) => s + b.yearStartValue, 0)
-      natAvgGrowth = totalYearStart > 0 ? (totalCurrent - totalYearStart) / totalYearStart : 0
-    }
-
+    // ── Step 6: Build the row ──
     if (isSummary) {
-      if (def.isRatio) {
-        const avgCurrent = branches.reduce((s, b) => s + b.currentValue, 0) / BRANCH_COUNT
-        const avgYearStart = branches.reduce((s, b) => s + b.yearStartValue, 0) / BRANCH_COUNT
-        const change = avgCurrent - avgYearStart
-        return {
-          id: def.id, name: def.name, indent: def.indent, category: def.category,
-          value: fmtValue(avgCurrent, def.unit),
-          rawValue: avgCurrent,
-          unit: def.unit,
-          comparisonType: def.comparisonType,
-          comparison: fmtPp(change),
-          comparisonRaw: change,
-          growthVsAll: "", growthRank: 0,
-        }
-      }
-      const totalCurrent = branches.reduce((s, b) => s + b.currentValue, 0)
-      const totalYearStart = branches.reduce((s, b) => s + b.yearStartValue, 0)
-      const totalGrowth = totalYearStart > 0 ? (totalCurrent - totalYearStart) / totalYearStart : 0
       return {
-        id: def.id, name: def.name, indent: def.indent, category: def.category,
-        value: fmtValue(totalCurrent, def.unit),
-        rawValue: totalCurrent,
+        id: def.id,
+        name: def.name,
+        indent: def.indent,
+        category: def.category,
+        value: fmtValue(def.nationalTotal, def.unit),
+        rawValue: def.nationalTotal,
         unit: def.unit,
         comparisonType: def.comparisonType,
-        comparison: fmtRate(totalGrowth),
-        comparisonRaw: totalGrowth,
-        growthVsAll: "", growthRank: 0,
+        comparison: fmtRate(nationalGrowth),
+        comparisonRaw: nationalGrowth,
+        growthVsAll: "",
+        growthVsAllRaw: 0,
+        growthRank: 0,
       }
     }
 
-    // Single branch view
-    const br = branches.find((b) => b.branchId === institutionId)!
+    const br = branches.find((b) => b.id === institutionId)!
     const rank = rankMap.get(institutionId) ?? 0
-    const growthDiff = br.growthRate - natAvgGrowth
-
-    if (def.isRatio) {
-      return {
-        id: def.id, name: def.name, indent: def.indent, category: def.category,
-        value: fmtValue(br.currentValue, def.unit),
-        rawValue: br.currentValue,
-        unit: def.unit,
-        comparisonType: def.comparisonType,
-        comparison: fmtPp(br.growthRate),
-        comparisonRaw: br.growthRate,
-        growthVsAll: fmtPp(growthDiff),
-        growthRank: rank,
-      }
-    }
+    const growthDiff = br.growth - nationalGrowth // difference in growth rate
 
     return {
-      id: def.id, name: def.name, indent: def.indent, category: def.category,
-      value: fmtValue(br.currentValue, def.unit),
-      rawValue: br.currentValue,
+      id: def.id,
+      name: def.name,
+      indent: def.indent,
+      category: def.category,
+      value: fmtValue(br.current, def.unit),
+      rawValue: br.current,
       unit: def.unit,
       comparisonType: def.comparisonType,
-      comparison: fmtRate(br.growthRate),
-      comparisonRaw: br.growthRate,
-      growthVsAll: fmtPp(growthDiff * 100),
+      comparison: fmtRate(br.growth),
+      comparisonRaw: br.growth,
+      growthVsAll: fmtRate(growthDiff),
+      growthVsAllRaw: growthDiff,
       growthRank: rank,
     }
   })
+}
+
+// ── Ratio rows (e.g. 不良率) — special handling ──────────────────
+function generateRatioRow(
+  def: Def,
+  institutionId: string,
+  isSummary: boolean,
+  df: number
+): IndicatorRow {
+  // Each branch has its own ratio around the national value
+  type BranchRatio = { id: string; current: number; yearStart: number; change: number }
+
+  const branches: BranchRatio[] = branchList.map((b) => {
+    const s = seeded(hashCode(`${def.id}_${b.id}_ratio`))
+    const yearStart = def.nationalYearStart + (s - 0.5) * 0.6
+    const drift = (seeded(hashCode(`${def.id}_${b.id}_rdrift`)) - 0.5) * 0.003 * (df - 31)
+    const changeBase = (seeded(hashCode(`${def.id}_${b.id}_rchg`)) - 0.5) * 0.3
+    const current = yearStart + changeBase + drift
+    return {
+      id: b.id,
+      current: Math.max(0.1, current),
+      yearStart,
+      change: current - yearStart,
+    }
+  })
+
+  const sorted = [...branches].sort((a, b) => a.change - b.change) // lower change = better for NPL
+  const rankMap = new Map<string, number>()
+  sorted.forEach((b, i) => rankMap.set(b.id, i + 1))
+
+  const nationalChange = def.nationalTotal - def.nationalYearStart
+
+  if (isSummary) {
+    return {
+      id: def.id,
+      name: def.name,
+      indent: def.indent,
+      category: def.category,
+      value: fmtValue(def.nationalTotal, def.unit),
+      rawValue: def.nationalTotal,
+      unit: def.unit,
+      comparisonType: def.comparisonType,
+      comparison: fmtPp(nationalChange),
+      comparisonRaw: nationalChange,
+      growthVsAll: "",
+      growthVsAllRaw: 0,
+      growthRank: 0,
+    }
+  }
+
+  const br = branches.find((b) => b.id === institutionId)!
+  const rank = rankMap.get(institutionId) ?? 0
+  const diffVsNational = br.change - nationalChange
+
+  return {
+    id: def.id,
+    name: def.name,
+    indent: def.indent,
+    category: def.category,
+    value: fmtValue(br.current, def.unit),
+    rawValue: br.current,
+    unit: def.unit,
+    comparisonType: def.comparisonType,
+    comparison: fmtPp(br.change),
+    comparisonRaw: br.change,
+    growthVsAll: fmtPp(diffVsNational),
+    growthVsAllRaw: diffVsNational,
+    growthRank: rank,
+  }
 }
