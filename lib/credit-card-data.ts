@@ -276,12 +276,11 @@ export function generateIndicators(institutionId: string, dateStr: string): Indi
 // ── Exported helpers ──────────────────────────────────────────────
 export { defs, branchList, BRANCH_COUNT, computeShares, seeded, hashCode, dateFactor, fmtValue, fmtRate }
 
-// ── Trend data: 12 months of national-level data for an indicator ─
+// ── Trend data: 12 months of data for an indicator ────────────────
 export interface TrendPoint {
-  month: string           // e.g. "2025/03"
-  value: number           // the absolute value for that month
-  growthValue: number     // bar: month-over-month growth amount
-  growthRate: number      // for tooltip: MoM growth rate
+  month: string          // e.g. "2025/03"
+  value: number          // absolute value for that month
+  yoyPct: number         // year-over-year % change (for bar chart)
 }
 
 const trendMonths = [
@@ -294,46 +293,42 @@ export function generateTrendData(indicatorId: string, institutionId: string): T
   if (!def) return []
   const isSummary = institutionId === "all"
 
-  // Base value for starting month
-  const baseTotal = def.nationalYearStart * 0.95 // ~start a bit below year-start
-  const growthPerMonth = ((def.nationalTotal / def.nationalYearStart) - 1) / 12
+  // National year-over-year growth (annualized)
+  const annualGrowth = (def.nationalTotal - def.nationalYearStart) / def.nationalYearStart
+  // Base value ~12 months ago
+  const baseTotal = def.nationalYearStart * (1 - annualGrowth * 0.15)
+  const growthPerMonth = annualGrowth / 12
 
   return trendMonths.map((month, mi) => {
-    // National value grows month by month
+    // Current period value: grows month-by-month with seasonal jitter
     const monthMultiplier = 1 + growthPerMonth * (mi + 1)
-    // Add seasonal jitter
-    const jitter = 1 + (seeded(hashCode(`trend_${indicatorId}_${month}`)) - 0.5) * 0.04
+    const jitter = 1 + (seeded(hashCode(`trend_${indicatorId}_${month}`)) - 0.5) * 0.03
     let value = baseTotal * monthMultiplier * jitter
 
-    // If branch selected, scale by that branch's share
+    // Same-month last year value: slightly lower baseline, different jitter
+    const lyBase = baseTotal * 0.92
+    const lyMultiplier = 1 + growthPerMonth * 0.3 * (mi + 1)
+    const lyJitter = 1 + (seeded(hashCode(`trend_ly_${indicatorId}_${month}`)) - 0.5) * 0.03
+    let lyValue = lyBase * lyMultiplier * lyJitter
+
+    // If branch selected, scale both by that branch's share
     if (!isSummary) {
       const shares = computeShares(indicatorId, "cur")
       const branchIdx = branchList.findIndex(b => b.id === institutionId)
       if (branchIdx >= 0) {
-        value = value * shares[branchIdx]
+        // Branch share with small per-month jitter for realism
+        const branchMoJitter = 1 + (seeded(hashCode(`trend_bs_${indicatorId}_${month}_${institutionId}`)) - 0.5) * 0.04
+        value = value * shares[branchIdx] * branchMoJitter
+        lyValue = lyValue * shares[branchIdx] * branchMoJitter
       }
     }
 
-    // Previous month value for MoM
-    const prevMultiplier = 1 + growthPerMonth * mi
-    const prevJitter = mi > 0
-      ? 1 + (seeded(hashCode(`trend_${indicatorId}_${trendMonths[mi - 1]}`)) - 0.5) * 0.04
-      : 1
-    let prevValue = baseTotal * prevMultiplier * prevJitter
-    if (!isSummary) {
-      const shares = computeShares(indicatorId, "cur")
-      const branchIdx = branchList.findIndex(b => b.id === institutionId)
-      if (branchIdx >= 0) prevValue = prevValue * shares[branchIdx]
-    }
-
-    const growthAmount = value - prevValue
-    const growthRt = prevValue > 0 ? growthAmount / prevValue : 0
+    const yoyPct = lyValue > 0 ? ((value - lyValue) / lyValue) * 100 : 0
 
     return {
       month,
       value: +value.toFixed(2),
-      growthValue: +growthAmount.toFixed(2),
-      growthRate: growthRt,
+      yoyPct: +yoyPct.toFixed(2),
     }
   })
 }
