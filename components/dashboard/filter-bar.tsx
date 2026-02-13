@@ -33,11 +33,11 @@ export function FilterBar({
   return (
     <div className="px-6 py-3 border-b border-border bg-card">
       {/* Breadcrumb */}
-      <div className="text-xs text-muted-foreground mb-2">
+      <div className="text-xs text-muted-foreground mb-2" suppressHydrationWarning>
         {breadcrumb.map((item, index) => (
-          <span key={item}>
+          <span key={item} suppressHydrationWarning>
             {index > 0 && <span className="mx-1">{'/'}</span>}
-            <span className={index === breadcrumb.length - 1 ? "text-foreground" : ""}>
+            <span suppressHydrationWarning className={index === breadcrumb.length - 1 ? "text-foreground" : ""}>
               {item}
             </span>
           </span>
