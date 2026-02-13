@@ -117,7 +117,7 @@ export function IndicatorsTable({ data, title, isSummary = false }: IndicatorsTa
                             row.growthRank <= 3 ? "text-primary" : row.growthRank >= 34 ? "text-bank-green" : "text-foreground"
                           )}
                         >
-                          {row.growthRank}/{data.length > 0 ? 36 : 0}
+                          {row.growthRank}/36
                         </span>
                       </td>
                     </>
