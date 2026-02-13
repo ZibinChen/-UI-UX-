@@ -1,19 +1,33 @@
 "use client"
 
-import { CalendarDays, ChevronDown } from "lucide-react"
+import { CalendarDays, ChevronDown, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { institutions, availableDates } from "@/lib/credit-card-data"
 
 interface FilterBarProps {
   breadcrumb?: string[]
-  institution?: string
-  date?: string
+  selectedInstitution: string
+  selectedDate: string
+  onInstitutionChange: (id: string) => void
+  onDateChange: (date: string) => void
 }
 
 export function FilterBar({
   breadcrumb = ["管理驾驶舱", "信用卡经营"],
-  institution = "境内分支机构汇总",
-  date = "2026/02/12",
+  selectedInstitution,
+  selectedDate,
+  onInstitutionChange,
+  onDateChange,
 }: FilterBarProps) {
+  const currentInst = institutions.find((i) => i.id === selectedInstitution)
+
   return (
     <div className="px-6 py-3 border-b border-border bg-card">
       {/* Breadcrumb */}
@@ -33,19 +47,71 @@ export function FilterBar({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-foreground font-medium">机构选择</span>
-            <Button variant="outline" size="sm" className="h-8 gap-1 text-sm text-foreground bg-card border-border">
-              {institution}
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-sm text-foreground bg-card border-border"
+                >
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  {currentInst?.name ?? "请选择机构"}
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 max-h-[420px]">
+                <ScrollArea className="h-[400px]">
+                  {institutions.map((inst) => (
+                    <DropdownMenuItem
+                      key={inst.id}
+                      className={
+                        inst.id === selectedInstitution
+                          ? "bg-primary/10 text-primary font-medium"
+                          : ""
+                      }
+                      onSelect={() => onInstitutionChange(inst.id)}
+                    >
+                      {inst.name}
+                    </DropdownMenuItem>
+                  ))}
+                </ScrollArea>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">统计截至：</span>
-          <Button variant="outline" size="sm" className="h-8 gap-1 text-sm text-foreground bg-card border-border">
-            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
-            {date}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-sm text-foreground bg-card border-border"
+              >
+                <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                {selectedDate}
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44 max-h-[320px]">
+              <ScrollArea className="h-[300px]">
+                {availableDates.map((d) => (
+                  <DropdownMenuItem
+                    key={d}
+                    className={
+                      d === selectedDate
+                        ? "bg-primary/10 text-primary font-medium"
+                        : ""
+                    }
+                    onSelect={() => onDateChange(d)}
+                  >
+                    {d}
+                  </DropdownMenuItem>
+                ))}
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

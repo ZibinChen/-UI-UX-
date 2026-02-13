@@ -1,14 +1,38 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { ArrowUp, ArrowDown } from "lucide-react"
 import type { IndicatorRow } from "@/lib/credit-card-data"
 
 interface IndicatorsTableProps {
   data: IndicatorRow[]
   title?: string
+  isSummary?: boolean // true when 境内分支机构汇总 is selected — hides growth columns
 }
 
-export function IndicatorsTable({ data, title }: IndicatorsTableProps) {
+function ComparisonCell({ value, type }: { value: string; type: string }) {
+  const isNegative = value.startsWith("-")
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <span className="text-xs text-muted-foreground shrink-0">{type}</span>
+      <span
+        className={cn(
+          "tabular-nums font-semibold text-sm",
+          isNegative ? "text-bank-green" : "text-primary"
+        )}
+      >
+        {value}
+      </span>
+      {isNegative ? (
+        <ArrowDown className="h-3.5 w-3.5 text-bank-green shrink-0" />
+      ) : (
+        <ArrowUp className="h-3.5 w-3.5 text-primary shrink-0" />
+      )}
+    </div>
+  )
+}
+
+export function IndicatorsTable({ data, title, isSummary = false }: IndicatorsTableProps) {
   return (
     <div className="bg-card rounded border border-border overflow-hidden">
       {title && (
@@ -17,35 +41,34 @@ export function IndicatorsTable({ data, title }: IndicatorsTableProps) {
         </div>
       )}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-muted">
-              <th className="text-left px-4 py-2.5 font-semibold text-foreground border-b border-border min-w-[220px]">
-                业务指标（万户/亿元/%）
+              <th className="text-left px-3 py-2.5 font-semibold text-foreground border-b border-border w-[200px]">
+                业务指标
               </th>
-              <th className="text-right px-4 py-2.5 font-semibold text-foreground border-b border-border min-w-[120px]">
+              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border w-[160px]">
                 业务量
               </th>
-              <th className="text-center px-4 py-2.5 font-semibold text-foreground border-b border-border min-w-[100px]">
-                <span>同比/</span>
-                <br />
-                <span>较年初</span>
+              <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border w-[180px]">
+                同比/较年初
               </th>
-              <th className="text-right px-4 py-2.5 font-semibold text-foreground border-b border-border min-w-[120px]">
-                增速较全辖
-              </th>
-              <th className="text-center px-4 py-2.5 font-semibold text-foreground border-b border-border min-w-[80px]">
-                <span>增速</span>
-                <br />
-                <span>排名</span>
-              </th>
+              {!isSummary && (
+                <>
+                  <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border w-[160px]">
+                    增速较全辖
+                  </th>
+                  <th className="text-center px-3 py-2.5 font-semibold text-foreground border-b border-border w-[80px]">
+                    增速排名
+                  </th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
             {data.map((row, index) => {
-              const isNegative = row.comparison.startsWith("-")
-              const isGrowthNegative = row.growthVsAll.startsWith("-")
               const isEvenRow = index % 2 === 0
+              const isGrowthNegative = row.growthVsAll.startsWith("-")
               return (
                 <tr
                   key={row.id}
@@ -54,50 +77,59 @@ export function IndicatorsTable({ data, title }: IndicatorsTableProps) {
                     isEvenRow ? "bg-card" : "bg-muted/30"
                   )}
                 >
+                  {/* Indicator name */}
                   <td
                     className={cn(
-                      "px-4 py-2.5 border-b border-border text-foreground",
+                      "px-3 py-2 border-b border-border text-foreground",
                       row.indent === 0 ? "font-semibold" : "font-normal"
                     )}
-                    style={{ paddingLeft: row.indent ? `${(row.indent ?? 0) * 24 + 16}px` : "16px" }}
+                    style={{
+                      paddingLeft: `${(row.indent ?? 0) * 20 + 12}px`,
+                    }}
                   >
                     {row.name}
                   </td>
-                  <td className="px-4 py-2.5 border-b border-border text-right tabular-nums text-foreground font-medium">
-                    {row.value}
-                  </td>
-                  <td className="px-4 py-2.5 border-b border-border text-center">
-                    <span
-                      className={cn(
-                        "tabular-nums font-medium",
-                        row.comparisonType === "较年初" ? "text-primary" : "text-foreground"
-                      )}
-                    >
-                      {row.comparisonType === "较年初" ? "较年初 " : "同比 "}
+
+                  {/* Value + unit */}
+                  <td className="px-3 py-2 border-b border-border text-right">
+                    <span className="tabular-nums text-foreground font-medium">
+                      {row.value}
                     </span>
-                    <br />
-                    <span
-                      className={cn(
-                        "tabular-nums font-semibold",
-                        isNegative ? "text-bank-green" : "text-primary"
-                      )}
-                    >
-                      {row.comparison}
+                    <span className="text-xs text-muted-foreground ml-1">
+                      {row.unit}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 border-b border-border text-right">
-                    <span
-                      className={cn(
-                        "tabular-nums font-medium",
-                        isGrowthNegative ? "text-bank-green" : "text-primary"
-                      )}
-                    >
-                      {row.growthVsAll}
-                    </span>
+
+                  {/* Comparison — label + value + arrow on same line */}
+                  <td className="px-3 py-2 border-b border-border text-right">
+                    <ComparisonCell value={row.comparison} type={row.comparisonType} />
                   </td>
-                  <td className="px-4 py-2.5 border-b border-border text-center tabular-nums font-medium text-foreground">
-                    {row.growthRank}
-                  </td>
+
+                  {/* Growth vs all (hidden for summary) */}
+                  {!isSummary && (
+                    <>
+                      <td className="px-3 py-2 border-b border-border text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <span
+                            className={cn(
+                              "tabular-nums font-medium text-sm",
+                              isGrowthNegative ? "text-bank-green" : "text-primary"
+                            )}
+                          >
+                            {row.growthVsAll}
+                          </span>
+                          {isGrowthNegative ? (
+                            <ArrowDown className="h-3.5 w-3.5 text-bank-green shrink-0" />
+                          ) : (
+                            <ArrowUp className="h-3.5 w-3.5 text-primary shrink-0" />
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 border-b border-border text-center tabular-nums font-medium text-foreground">
+                        {row.growthRank}
+                      </td>
+                    </>
+                  )}
                 </tr>
               )
             })}

@@ -23,6 +23,8 @@ export function DashboardShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [activeMainTab, setActiveMainTab] = useState("credit-card")
   const [activeSidebarItem, setActiveSidebarItem] = useState("assets")
+  const [selectedInstitution, setSelectedInstitution] = useState("all")
+  const [selectedDate, setSelectedDate] = useState("2026/02/12")
 
   return (
     <div className="h-dvh flex flex-col bg-background overflow-hidden">
@@ -36,7 +38,12 @@ export function DashboardShell() {
         />
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          <FilterBar />
+          <FilterBar
+            selectedInstitution={selectedInstitution}
+            selectedDate={selectedDate}
+            onInstitutionChange={setSelectedInstitution}
+            onDateChange={setSelectedDate}
+          />
 
           {/* Main Tab Bar */}
           <div className="px-6 bg-card">
@@ -51,7 +58,12 @@ export function DashboardShell() {
           {/* Content */}
           <ScrollArea className="flex-1">
             <div className="p-6">
-              {activeMainTab === "credit-card" && <CreditCardPanel />}
+              {activeMainTab === "credit-card" && (
+                <CreditCardPanel
+                  selectedInstitution={selectedInstitution}
+                  selectedDate={selectedDate}
+                />
+              )}
               {activeMainTab === "assets" && <AssetsPanel />}
               {activeMainTab === "customers" && <CustomersPanel />}
               {activeMainTab === "performance" && <PlaceholderPanel title="经营效益" />}
