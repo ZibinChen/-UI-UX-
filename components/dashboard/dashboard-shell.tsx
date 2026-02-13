@@ -32,6 +32,7 @@ export function DashboardShell() {
 
         <main className="flex-1 flex flex-col overflow-hidden">
           <FilterBar
+            breadcrumb={["\u7ba1\u7406\u9a7e\u9a76\u8231", "\u7efc\u5408\u7ecf\u8425\u8ba1\u5212"]}
             selectedInstitution={selectedInstitution}
             selectedDate={selectedDate}
             onInstitutionChange={setSelectedInstitution}

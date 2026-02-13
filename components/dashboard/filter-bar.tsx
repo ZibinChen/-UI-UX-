@@ -19,8 +19,10 @@ interface FilterBarProps {
   onDateChange: (date: string) => void
 }
 
+const defaultBreadcrumb = ["\u7ba1\u7406\u9a7e\u9a76\u8231", "\u4fe1\u7528\u5361\u7ecf\u8425"]
+
 export function FilterBar({
-  breadcrumb = ["管理驾驶舱", "信用卡经营"],
+  breadcrumb = defaultBreadcrumb,
   selectedInstitution,
   selectedDate,
   onInstitutionChange,
