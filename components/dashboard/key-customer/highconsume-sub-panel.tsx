@@ -11,12 +11,23 @@ interface Props {
   sectionTitle: string
 }
 
-// 3 groups under 中高消费客户数, each with its own children
-const groups = [
+// Tab 0: Overview showing total + 3 L1 children
+const overviewTab = {
+  id: "overview",
+  label: "信用卡中高消费客户数",
+  kpis: [
+    { id: "kc_hc_total",     label: "信用卡中高消费客户数" },
+    { id: "kc_hc_downgrade", label: "中高消费降级客户",  parentId: "kc_hc_total" },
+    { id: "kc_hc_maintain",  label: "中高消费维持客户",  parentId: "kc_hc_total" },
+    { id: "kc_hc_upgrade",   label: "中高消费升级客户",  parentId: "kc_hc_total" },
+  ],
+}
+
+// Tab 1-3: Drill-down into each L1 with its L2 children
+const drillTabs = [
   {
     id: "kc_hc_downgrade",
     label: "中高消费降级客户",
-    // parent + L2 children
     kpis: [
       { id: "kc_hc_downgrade", label: "中高消费降级客户" },
       { id: "kc_hc_lost",      label: "中高消费流失客户",           parentId: "kc_hc_downgrade" },
@@ -28,7 +39,6 @@ const groups = [
   {
     id: "kc_hc_maintain",
     label: "中高消费维持客户",
-    // Only the parent, no children
     kpis: [
       { id: "kc_hc_maintain", label: "中高消费维持客户" },
     ],
@@ -36,7 +46,6 @@ const groups = [
   {
     id: "kc_hc_upgrade",
     label: "中高消费升级客户",
-    // parent + L2 children
     kpis: [
       { id: "kc_hc_upgrade", label: "中高消费升级客户" },
       { id: "kc_hc_scene",   label: "中高消费大额场景升级客户", parentId: "kc_hc_upgrade" },
@@ -45,9 +54,11 @@ const groups = [
   },
 ]
 
+const allTabs = [overviewTab, ...drillTabs]
+
 export function HighconsumeSubPanel({ selectedInstitution, selectedDate, sectionTitle }: Props) {
-  const [activeGroup, setActiveGroup] = useState(groups[0].id)
-  const group = groups.find((g) => g.id === activeGroup) ?? groups[0]
+  const [activeTab, setActiveTab] = useState(overviewTab.id)
+  const tab = allTabs.find((t) => t.id === activeTab) ?? overviewTab
 
   const indicators = useMemo(
     () => generateKeyCustomerIndicators(selectedInstitution, selectedDate).filter(r => r.category === "highconsume"),
@@ -56,43 +67,26 @@ export function HighconsumeSubPanel({ selectedInstitution, selectedDate, section
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Top-level: total KPI card for 中高消费客户数 */}
-      {(() => {
-        const total = indicators.find(r => r.id === "kc_hc_total")
-        if (!total) return null
-        return (
-          <div className="rounded border border-border bg-card px-4 py-3">
-            <p className="text-xs text-muted-foreground">{total.name}</p>
-            <p className="text-lg font-semibold text-foreground">
-              {total.value} <span className="text-xs font-normal text-muted-foreground">{total.unit}</span>
-            </p>
-            <p className={cn("text-xs", total.comparisonRaw >= 0 ? "text-bank-red" : "text-bank-green")}>
-              {total.comparisonType} {total.comparison}
-            </p>
-          </div>
-        )
-      })()}
-
-      {/* Horizontal group tabs */}
+      {/* Horizontal tab pills */}
       <div className="flex items-center gap-1 flex-wrap">
-        {groups.map((g) => (
+        {allTabs.map((t) => (
           <button
-            key={g.id}
-            onClick={() => setActiveGroup(g.id)}
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
             className={cn(
               "px-3 py-1.5 text-xs rounded-full border transition-colors",
-              activeGroup === g.id
+              activeTab === t.id
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-card text-muted-foreground border-border hover:bg-muted/50"
             )}
           >
-            {g.label}
+            {t.label}
           </button>
         ))}
       </div>
 
       <DetailPanel
-        kpiDefs={group.kpis}
+        kpiDefs={tab.kpis}
         indicators={indicators}
         selectedInstitution={selectedInstitution}
         selectedDate={selectedDate}
