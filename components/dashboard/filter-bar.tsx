@@ -19,36 +19,42 @@ interface FilterBarProps {
   onDateChange: (date: string) => void
 }
 
-const defaultBreadcrumb = ["\u7ba1\u7406\u9a7e\u9a76\u8231", "\u4fe1\u7528\u5361\u7ecf\u8425"]
-
 export function FilterBar({
-  breadcrumb = defaultBreadcrumb,
+  breadcrumb,
   selectedInstitution,
   selectedDate,
   onInstitutionChange,
   onDateChange,
 }: FilterBarProps) {
   const currentInst = institutions.find((i) => i.id === selectedInstitution)
+  const items = breadcrumb ?? []
 
   return (
     <div className="px-6 py-3 border-b border-border bg-card">
-      {/* Breadcrumb */}
-      <div className="text-xs text-muted-foreground mb-2" suppressHydrationWarning>
-        {breadcrumb.map((item, index) => (
-          <span key={item} suppressHydrationWarning>
-            {index > 0 && <span className="mx-1">{'/'}</span>}
-            <span suppressHydrationWarning className={index === breadcrumb.length - 1 ? "text-foreground" : ""}>
-              {item}
+      {/* Breadcrumb - rendered client-only to avoid SSR encoding issues with CJK */}
+      {items.length > 0 && (
+        <p className="text-xs text-muted-foreground mb-2" suppressHydrationWarning>
+          {items.map((item, index) => (
+            <span key={index} suppressHydrationWarning>
+              {index > 0 && <span className="mx-1">{'/'}</span>}
+              <span
+                suppressHydrationWarning
+                className={index === items.length - 1 ? "text-foreground" : ""}
+              >
+                {item}
+              </span>
             </span>
-          </span>
-        ))}
-      </div>
+          ))}
+        </p>
+      )}
 
       {/* Filter row */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-foreground font-medium">机构选择</span>
+            <span className="text-sm text-foreground font-medium" suppressHydrationWarning>
+              {'机构选择'}
+            </span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -57,7 +63,7 @@ export function FilterBar({
                   className="h-8 gap-1.5 text-sm text-foreground bg-card border-border"
                 >
                   <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  {currentInst?.name ?? "请选择机构"}
+                  <span suppressHydrationWarning>{currentInst?.name ?? '请选择机构'}</span>
                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
@@ -83,7 +89,9 @@ export function FilterBar({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">统计截至：</span>
+          <span className="text-sm text-muted-foreground" suppressHydrationWarning>
+            {'统计截至：'}
+          </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
