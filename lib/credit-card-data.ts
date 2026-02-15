@@ -11,11 +11,13 @@
 //   7. Rankings come from sorting branch growth rates.
 // ====================================================================
 
+export type IndicatorCategory = "customer" | "consumption" | "loan" | "crossborder" | "highend" | "highconsume"
+
 export interface IndicatorRow {
   id: string
   name: string
   indent: number
-  category: "customer" | "consumption" | "loan"
+  category: IndicatorCategory
   value: string
   rawValue: number
   unit: string
@@ -108,7 +110,7 @@ interface Def {
   id: string
   name: string
   indent: number
-  category: "customer" | "consumption" | "loan"
+  category: IndicatorCategory
   unit: string
   comparisonType: string
   nationalTotal: number
@@ -135,6 +137,32 @@ const defs: Def[] = [
   { id: "loan_balance",  name: "贷款余额",        indent: 0, category: "loan",        unit: "亿元", comparisonType: "较年初", nationalTotal: 5620,   nationalYearStart: 5340 },
   { id: "npl_balance",   name: "不良余额",        indent: 0, category: "loan",        unit: "亿元", comparisonType: "较年初", nationalTotal: 86.5,   nationalYearStart: 82.1 },
   { id: "npl_ratio",     name: "不良率",          indent: 0, category: "loan",        unit: "%",   comparisonType: "较年初", nationalTotal: 1.54,   nationalYearStart: 1.54, isRatio: true },
+]
+
+// ── Key Customer Group indicator definitions ──────────────────────
+const keyCustomerDefs: Def[] = [
+  // Cross-border
+  { id: "kc_cross_total",  name: "信用卡跨境客户数",  indent: 0, category: "crossborder",  unit: "万户", comparisonType: "同比", nationalTotal: 892,   nationalYearStart: 815 },
+  { id: "kc_study",        name: "留学客群",          indent: 1, category: "crossborder",  unit: "万户", comparisonType: "同比", nationalTotal: 186,   nationalYearStart: 168 },
+  { id: "kc_resident",     name: "常驻客群",          indent: 1, category: "crossborder",  unit: "万户", comparisonType: "同比", nationalTotal: 245,   nationalYearStart: 228 },
+  { id: "kc_outbound",     name: "出境客群",          indent: 1, category: "crossborder",  unit: "万户", comparisonType: "同比", nationalTotal: 312,   nationalYearStart: 280 },
+  { id: "kc_overseas",     name: "海淘客群",          indent: 1, category: "crossborder",  unit: "万户", comparisonType: "同比", nationalTotal: 149,   nationalYearStart: 139 },
+  // High-end
+  { id: "kc_highend_total", name: "信用卡中高端客户数", indent: 0, category: "highend",     unit: "万户", comparisonType: "较年初", nationalTotal: 1520, nationalYearStart: 1435 },
+  { id: "kc_wealth_mgmt",   name: "理财客户",         indent: 1, category: "highend",     unit: "万户", comparisonType: "较年初", nationalTotal: 680,  nationalYearStart: 645 },
+  { id: "kc_wealth",        name: "财富客户",         indent: 1, category: "highend",     unit: "万户", comparisonType: "较年初", nationalTotal: 520,  nationalYearStart: 492 },
+  { id: "kc_private",       name: "私行客户",         indent: 1, category: "highend",     unit: "万户", comparisonType: "较年初", nationalTotal: 320,  nationalYearStart: 298 },
+  // High-consumption
+  { id: "kc_hc_total",     name: "信用卡中高消费客户数", indent: 0, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 2156, nationalYearStart: 2020 },
+  { id: "kc_hc_downgrade", name: "中高消费降级客户",    indent: 0, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 385,  nationalYearStart: 410 },
+  { id: "kc_hc_lost",      name: "中高消费流失客户",    indent: 1, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 128,   nationalYearStart: 142 },
+  { id: "kc_hc_blocked",   name: "用卡受阻-销户客户",   indent: 1, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 96,    nationalYearStart: 105 },
+  { id: "kc_hc_inactive",  name: "用卡受阻-到期换卡未激活客户", indent: 1, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 161, nationalYearStart: 163 },
+  { id: "kc_hc_transfer",  name: "消费转他行客户",      indent: 0, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 218,   nationalYearStart: 205 },
+  { id: "kc_hc_maintain",  name: "中高消费维持客户",    indent: 0, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 1082, nationalYearStart: 1005 },
+  { id: "kc_hc_upgrade",   name: "中高消费升级客户",    indent: 0, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 689,  nationalYearStart: 605 },
+  { id: "kc_hc_scene",     name: "中高消费大额场景升级客户", indent: 0, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 245, nationalYearStart: 218 },
+  { id: "kc_hc_asset",     name: "中高资产消费升级客户", indent: 0, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 312,   nationalYearStart: 276 },
 ]
 
 // ── Compute normalized shares for a specific indicator ────────────
@@ -273,8 +301,61 @@ export function generateIndicators(institutionId: string, dateStr: string): Indi
   })
 }
 
+// ── Key Customer Group generation (same engine, different defs) ───
+export function generateKeyCustomerIndicators(institutionId: string, dateStr: string): IndicatorRow[] {
+  const isSummary = institutionId === "all"
+  const df = dateFactor(dateStr)
+
+  return keyCustomerDefs.map((def) => {
+    if (def.isRatio) {
+      return generateRatioRow(def, institutionId, isSummary, df)
+    }
+    const sharesCurrent = computeShares(def.id, "cur")
+    const sharesYearStart = computeShares(def.id, "ys")
+    const adjustedSharesCurrent = sharesCurrent.map((s, i) => {
+      const drift = (seeded(hashCode(`${def.id}_${branchList[i].id}_drift`)) - 0.5) * 0.001 * (df - 31)
+      return Math.max(0.001, s + drift)
+    })
+    const sumAdj = adjustedSharesCurrent.reduce((a, b) => a + b, 0)
+    const normalizedCurrent = adjustedSharesCurrent.map((s) => s / sumAdj)
+
+    type BranchData = { id: string; current: number; yearStart: number; growth: number }
+    const branches: BranchData[] = branchList.map((b, i) => {
+      const current = def.nationalTotal * normalizedCurrent[i]
+      const yearStart = def.nationalYearStart * sharesYearStart[i]
+      const growth = yearStart > 0 ? (current - yearStart) / yearStart : 0
+      return { id: b.id, current, yearStart, growth }
+    })
+
+    const nationalGrowth = (def.nationalTotal - def.nationalYearStart) / def.nationalYearStart
+    const sorted = [...branches].sort((a, b) => b.growth - a.growth)
+    const rankMap = new Map<string, number>()
+    sorted.forEach((b, i) => rankMap.set(b.id, i + 1))
+
+    if (isSummary) {
+      return {
+        id: def.id, name: def.name, indent: def.indent, category: def.category,
+        value: fmtValue(def.nationalTotal, def.unit), rawValue: def.nationalTotal, unit: def.unit,
+        comparisonType: def.comparisonType, comparison: fmtRate(nationalGrowth), comparisonRaw: nationalGrowth,
+        growthVsAll: "", growthVsAllRaw: 0, growthRank: 0,
+      }
+    }
+
+    const br = branches.find((b) => b.id === institutionId)!
+    const rank = rankMap.get(institutionId) ?? 0
+    const growthDiff = br.growth - nationalGrowth
+
+    return {
+      id: def.id, name: def.name, indent: def.indent, category: def.category,
+      value: fmtValue(br.current, def.unit), rawValue: br.current, unit: def.unit,
+      comparisonType: def.comparisonType, comparison: fmtRate(br.growth), comparisonRaw: br.growth,
+      growthVsAll: fmtRate(growthDiff), growthVsAllRaw: growthDiff, growthRank: rank,
+    }
+  })
+}
+
 // ── Exported helpers ──────────────────────────────────────────────
-export { defs, branchList, BRANCH_COUNT, computeShares, seeded, hashCode, dateFactor, fmtValue, fmtRate }
+export { defs, keyCustomerDefs, branchList, BRANCH_COUNT, computeShares, seeded, hashCode, dateFactor, fmtValue, fmtRate }
 
 // ── Trend data: 12 months of data for an indicator ────────────────
 export interface TrendPoint {
@@ -288,8 +369,10 @@ const trendMonths = [
   "2025/09","2025/10","2025/11","2025/12","2026/01","2026/02",
 ]
 
+const allDefs = [...defs, ...keyCustomerDefs]
+
 export function generateTrendData(indicatorId: string, institutionId: string): TrendPoint[] {
-  const def = defs.find(d => d.id === indicatorId)
+  const def = allDefs.find(d => d.id === indicatorId)
   if (!def) return []
   const isSummary = institutionId === "all"
 
@@ -346,7 +429,7 @@ export interface BranchRankRow {
 }
 
 export function generateBranchRanking(indicatorId: string, dateStr: string): BranchRankRow[] {
-  const def = defs.find(d => d.id === indicatorId)
+  const def = allDefs.find(d => d.id === indicatorId)
   if (!def) return []
 
   const df = dateFactor(dateStr)
@@ -400,7 +483,7 @@ export function generateBranchComparison(
   indicatorId: string,
   branchIds: string[]
 ): BranchTrendLine[] {
-  const def = defs.find(d => d.id === indicatorId)
+  const def = allDefs.find(d => d.id === indicatorId)
   if (!def) return []
 
   return branchIds.map((bid, ci) => {
@@ -433,7 +516,7 @@ export function generateBranchComparison(
 
 // ── Get indicator definition by id ────────────────────────────────
 export function getIndicatorDef(id: string) {
-  return defs.find(d => d.id === id)
+  return allDefs.find(d => d.id === id)
 }
 
 // ── Ratio rows (e.g. 不良率) — special handling ──────────────────

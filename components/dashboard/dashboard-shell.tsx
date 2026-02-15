@@ -6,13 +6,18 @@ import { Sidebar } from "./sidebar"
 import { FilterBar } from "./filter-bar"
 import { TabNavigation } from "./tab-navigation"
 import { CreditCardPanel } from "./panels/credit-card-panel"
+import { KeyCustomerPanel } from "./panels/key-customer-panel"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
-const BREADCRUMB = ['管理驾驶舱', '综合经营计划']
 
 const mainTabs = [
   { id: "comprehensive", label: '综合经营计划' },
+  { id: "key-customer", label: '信用卡重点客群' },
 ]
+
+const BREADCRUMB_MAP: Record<string, string[]> = {
+  comprehensive: ['管理驾驶舱', '综合经营计划'],
+  'key-customer': ['管理驾驶舱', '信用卡重点客群'],
+}
 
 export function DashboardShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
@@ -34,7 +39,7 @@ export function DashboardShell() {
 
         <main className="flex-1 flex flex-col overflow-hidden">
           <FilterBar
-            breadcrumb={BREADCRUMB}
+            breadcrumb={BREADCRUMB_MAP[activeMainTab] ?? BREADCRUMB_MAP.comprehensive}
             selectedInstitution={selectedInstitution}
             selectedDate={selectedDate}
             onInstitutionChange={setSelectedInstitution}
@@ -56,6 +61,12 @@ export function DashboardShell() {
             <div className="p-6">
               {activeMainTab === "comprehensive" && (
                 <CreditCardPanel
+                  selectedInstitution={selectedInstitution}
+                  selectedDate={selectedDate}
+                />
+              )}
+              {activeMainTab === "key-customer" && (
+                <KeyCustomerPanel
                   selectedInstitution={selectedInstitution}
                   selectedDate={selectedDate}
                 />
