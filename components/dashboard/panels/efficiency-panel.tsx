@@ -175,8 +175,11 @@ function OverviewTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlight
 
 /* ================================================================
    Tab 2: 比系统得分明细
-   四大客群 -> 公式 -> 折效客户数 -> 2025 vs 2024 -> 增速/增量
-   -> 增速/增量得分率 -> 比重 -> x100/10 -> 比系统得分
+   Step flow:
+     四大客群 -> 公式 -> 折效客户数 (=2025年)
+     -> vs 2024基数 -> 增速 / 增量
+     -> 增速得分率(比重70%) / 增量得分率(比重30%)
+     -> (增速得分率×70% + 增量得分率×30%) × 100 / 10 -> 比系统得分
    ================================================================ */
 function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlightId: string | null }) {
   const { toggle, SortIcon, sort } = useSortable()
@@ -185,19 +188,19 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
   return (
     <div className="flex flex-col gap-4">
       <div className="bg-card rounded border border-border overflow-x-auto">
-        <table className="w-full border-collapse min-w-[1400px]">
+        <table className="w-full border-collapse min-w-[1500px]">
           <thead>
-            {/* Group headers */}
+            {/* Group headers row */}
             <tr className="bg-muted/60">
-              <th colSpan={2} className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border text-center" />
+              <th colSpan={2} className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border" />
               <th colSpan={4} className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border text-center text-foreground">
-                {"四大客群"}
+                {"四大客群（子指标）"}
               </th>
               <th className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border text-center text-foreground">
-                {"公式"}
+                {"加权公式"}
               </th>
-              <th colSpan={2} className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border text-center text-foreground">
-                {"2025 vs 2024"}
+              <th className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border text-center text-foreground">
+                {"2024年基数"}
               </th>
               <th colSpan={2} className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border text-center text-foreground">
                 {"增速"}
@@ -217,38 +220,31 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
               <th className={`${thBase} text-left min-w-[80px]`}>{"机构"}</th>
               {/* 4 sub-indicators */}
               <th className={`${thBase} text-right`} onClick={() => toggle("annual10k")}>
-                <span>{"年消费1w"}</span><br /><span className="font-normal text-muted-foreground">{"×30%"}</span>
-                <SortIcon col="annual10k" />
+                {"信用卡年消费"}<br />{"1万以上客户"}<SortIcon col="annual10k" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("newActive")}>
-                <span>{"新增活跃"}</span><br /><span className="font-normal text-muted-foreground">{"×25%"}</span>
-                <SortIcon col="newActive" />
+                {"新增活跃客户"}<SortIcon col="newActive" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("highendActive")}>
-                <span>{"中高端活跃"}</span><br /><span className="font-normal text-muted-foreground">{"×25%"}</span>
-                <SortIcon col="highendActive" />
+                {"中高端新增"}<br />{"活跃客户"}<SortIcon col="highendActive" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("crossBorder")}>
-                <span>{"跨境交易"}</span><br /><span className="font-normal text-muted-foreground">{"×20%"}</span>
-                <SortIcon col="crossBorder" />
+                {"跨境交易客户"}<SortIcon col="crossBorder" />
               </th>
-              {/* formula result */}
+              {/* formula -> 折效客户数 = 2025年 */}
               <th className={`${thBase} text-right`} onClick={() => toggle("efficiencyCust")}>
-                {"折效客户数"}<SortIcon col="efficiencyCust" />
+                {"对私折效客户数"}<br />{"（2025年）"}<SortIcon col="efficiencyCust" />
               </th>
-              {/* 2025 vs 2024 */}
               <th className={`${thBase} text-right`} onClick={() => toggle("efficiencyCustBase")}>
-                {"2024基数"}<SortIcon col="efficiencyCustBase" />
-              </th>
-              <th className={`${thBase} text-right`} onClick={() => toggle("efficiencyCust")}>
-                {"2025年"}<SortIcon col="efficiencyCust" />
+                {"2024年基数"}<SortIcon col="efficiencyCustBase" />
               </th>
               {/* 增速 */}
               <th className={`${thBase} text-right`} onClick={() => toggle("growthRate")}>
                 {"增速"}<SortIcon col="growthRate" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("growthRateScore")}>
-                <span>{"得分率"}</span><br /><span className="font-normal text-muted-foreground">{"(比重70%)"}</span>
+                {"增速得分率"}<br />
+                <span className="font-normal text-muted-foreground">{"(占比70%)"}</span>
                 <SortIcon col="growthRateScore" />
               </th>
               {/* 增量 */}
@@ -256,7 +252,8 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
                 {"增量"}<SortIcon col="growthIncrement" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("growthIncrScore")}>
-                <span>{"得分率"}</span><br /><span className="font-normal text-muted-foreground">{"(比重30%)"}</span>
+                {"增量得分率"}<br />
+                <span className="font-normal text-muted-foreground">{"(占比30%)"}</span>
                 <SortIcon col="growthIncrScore" />
               </th>
               {/* 比系统得分 */}
@@ -272,16 +269,17 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
                 <tr key={row.branchId} className={hl ? "bg-primary/10 font-semibold" : "hover:bg-muted/30"}>
                   <td className={`${tdBase} text-center`}>{row.rank}</td>
                   <td className={`${tdBase} text-left text-foreground`}>{row.branchName}</td>
-                  <td className={tdBase}>{row.annual10k.toFixed(0)}</td>
-                  <td className={tdBase}>{row.newActive.toFixed(0)}</td>
-                  <td className={tdBase}>{row.highendActive.toFixed(0)}</td>
-                  <td className={tdBase}>{row.crossBorder.toFixed(0)}</td>
-                  <td className={`${tdBase} font-semibold text-foreground`}>{row.efficiencyCust.toFixed(0)}</td>
-                  <td className={tdBase}>{row.efficiencyCustBase.toFixed(0)}</td>
-                  <td className={tdBase}>{row.efficiencyCust.toFixed(0)}</td>
-                  <td className={tdBase}>{row.growthRate.toFixed(2)}%</td>
+                  <td className={tdBase}>{row.annual10k.toLocaleString()}</td>
+                  <td className={tdBase}>{row.newActive.toLocaleString()}</td>
+                  <td className={tdBase}>{row.highendActive.toLocaleString()}</td>
+                  <td className={tdBase}>{row.crossBorder.toLocaleString()}</td>
+                  <td className={`${tdBase} font-semibold text-foreground`}>{row.efficiencyCust.toLocaleString()}</td>
+                  <td className={tdBase}>{row.efficiencyCustBase.toLocaleString()}</td>
+                  <td className={`${tdBase} ${row.growthRate < 0 ? "text-[hsl(140,60%,40%)]" : ""}`}>
+                    {row.growthRate.toFixed(2)}%
+                  </td>
                   <td className={tdBase}>{row.growthRateScore.toFixed(2)}%</td>
-                  <td className={tdBase}>{row.growthIncrement.toFixed(0)}</td>
+                  <td className={tdBase}>{row.growthIncrement.toLocaleString()}</td>
                   <td className={tdBase}>{row.growthIncrScore.toFixed(2)}%</td>
                   <td className={`${tdBase} border-r-0 font-semibold text-foreground`}>{row.systemScore.toFixed(2)}</td>
                 </tr>
@@ -291,7 +289,7 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
         </table>
       </div>
 
-      {/* Formula breakdown */}
+      {/* Formula breakdown card */}
       <div className="bg-card rounded border border-border px-4 py-3">
         <h3 className="text-sm font-semibold text-foreground mb-2">{"计算公式"}</h3>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
@@ -300,13 +298,13 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
             {subIndicators.map((si, i) => (
               <span key={si.id}>
                 {i > 0 ? " + " : ""}
-                {`${si.name} × ${(si.weight * 100).toFixed(0)}%`}
+                {`${si.name} × ${si.formulaWeight}`}
               </span>
             ))}
           </li>
           <li>{"增速 = (2025年折效客户数 - 2024年基数) / 2024年基数"}</li>
           <li>{"增量 = 2025年折效客户数 - 2024年基数"}</li>
-          <li>{"增速/增量得分率：基于各分行与全行平均值的偏差标准化，映射到0~100分"}</li>
+          <li>{"增速/增量得分率：基于各分行与全行平均值的标准差归一化，映射到 [30%, 130%]"}</li>
           <li>{"比系统得分 = (增速得分率 × 70% + 增量得分率 × 30%) × 100 / 10"}</li>
         </ul>
       </div>
@@ -316,7 +314,7 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
 
 /* ================================================================
    Tab 3: 对私商户日均存款扣分
-   日均存款 / 目标 / 完成率 / 扣分
+   日均存款(亿元) / 目标(亿元) / 完成率 / 扣分
    ================================================================ */
 function DepositDeductionTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlightId: string | null }) {
   const { toggle, SortIcon, sort } = useSortable()
@@ -333,23 +331,27 @@ function DepositDeductionTable({ rows, highlightId }: { rows: EfficiencyRow[]; h
               </th>
               <th className={`${thBase} text-left min-w-[100px]`}>{"机构"}</th>
               <th className={`${thBase} text-right`} onClick={() => toggle("depositActual")}>
-                {"2025年对私商户日均存款"}<SortIcon col="depositActual" />
+                {"2025年对私商户"}<br />{"日均存款（亿元）"}<SortIcon col="depositActual" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("depositTarget")}>
-                {"目标"}<SortIcon col="depositTarget" />
+                {"2025年对私商户"}<br />{"日均存款目标（亿元）"}<SortIcon col="depositTarget" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("depositCompletionRate")}>
                 {"目标完成率"}<SortIcon col="depositCompletionRate" />
               </th>
               <th className={`${thBase} text-right border-r-0`} onClick={() => toggle("depositDeduction")}>
-                {"扣分"}<SortIcon col="depositDeduction" />
+                {"对私商户日均"}<br />{"存款扣分项"}<SortIcon col="depositDeduction" />
               </th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((row) => {
               const hl = row.branchId === highlightId
-              const rateColor = row.depositCompletionRate >= 100 ? "text-[hsl(140,60%,40%)]" : "text-primary"
+              const rateColor = row.depositCompletionRate >= 100
+                ? "text-[hsl(140,60%,40%)]"
+                : row.depositCompletionRate < 90
+                  ? "text-primary"
+                  : ""
               return (
                 <tr key={row.branchId} className={hl ? "bg-primary/10 font-semibold" : "hover:bg-muted/30"}>
                   <td className={`${tdBase} text-center`}>{row.rank}</td>
@@ -367,13 +369,13 @@ function DepositDeductionTable({ rows, highlightId }: { rows: EfficiencyRow[]; h
         </table>
       </div>
 
-      {/* Formula */}
+      {/* Deduction rules card */}
       <div className="bg-card rounded border border-border px-4 py-3">
         <h3 className="text-sm font-semibold text-foreground mb-2">{"扣分规则"}</h3>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
           <li>{"目标完成率 = 2025年对私商户日均存款 / 目标"}</li>
           <li>{"目标完成率 ≥ 100%：不扣分"}</li>
-          <li>{"目标完成率 < 100%：扣分 = (1 - 完成率) × 20，最高扣20分"}</li>
+          <li>{"目标完成率 < 100%：扣分 = (1 - 完成率) × 10，最高扣10分"}</li>
         </ul>
       </div>
     </div>
