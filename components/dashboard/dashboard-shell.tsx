@@ -7,16 +7,19 @@ import { FilterBar } from "./filter-bar"
 import { TabNavigation } from "./tab-navigation"
 import { CreditCardPanel } from "./panels/credit-card-panel"
 import { KeyCustomerPanel } from "./panels/key-customer-panel"
+import { CrossSellPanel } from "./panels/cross-sell-panel"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 const mainTabs = [
   { id: "comprehensive", label: '综合经营计划' },
   { id: "key-customer", label: '信用卡重点客群' },
+  { id: "cross-sell", label: '交叉销售' },
 ]
 
 const BREADCRUMB_MAP: Record<string, string[]> = {
   comprehensive: ['管理驾驶舱', '综合经营计划'],
   'key-customer': ['管理驾驶舱', '信用卡重点客群'],
+  'cross-sell': ['管理驾驶舱', '交叉销售'],
 }
 
 export function DashboardShell() {
@@ -67,6 +70,12 @@ export function DashboardShell() {
               )}
               {activeMainTab === "key-customer" && (
                 <KeyCustomerPanel
+                  selectedInstitution={selectedInstitution}
+                  selectedDate={selectedDate}
+                />
+              )}
+              {activeMainTab === "cross-sell" && (
+                <CrossSellPanel
                   selectedInstitution={selectedInstitution}
                   selectedDate={selectedDate}
                 />
