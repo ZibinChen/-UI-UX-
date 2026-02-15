@@ -19,16 +19,24 @@ export function CrossSellPanel({ selectedInstitution, selectedDate }: CrossSellP
   const [activeSubTab, setActiveSubTab] = useState("progress")
 
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-base font-bold text-foreground" suppressHydrationWarning>
-        {'交叉销售 — 自动还款绑定"金"喜营销活动'}
-      </h2>
+    <div className="flex flex-col gap-6">
+      {/* Sub-tab Navigation */}
       <TabNavigation
         tabs={subTabs}
         activeTab={activeSubTab}
         onTabChange={setActiveSubTab}
         variant="pill"
       />
+
+      {/* Report Title */}
+      <div className="bg-card rounded border border-border px-4 py-3" suppressHydrationWarning>
+        <h2 className="text-base font-semibold text-foreground text-center" suppressHydrationWarning>
+          {'交叉销售 — 自动还款绑定"金"喜营销活动'}
+        </h2>
+        <p className="text-xs text-muted-foreground text-center mt-1" suppressHydrationWarning>
+          {'活动期间：2025年9月5日 - 2026年12月21日'}
+        </p>
+      </div>
 
       {activeSubTab === "progress" && (
         <ActivityProgressPanel
