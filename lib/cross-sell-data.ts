@@ -180,7 +180,7 @@ export interface CrossSellTrendPoint {
   newCust: number      // cumulative
   bound: number        // cumulative
   bindRate: number     // cumulative %
-  momPct: number       // period-over-period % change of the cumulative value
+  momPct: number | null // period-over-period % change of the cumulative value (null for first period)
 }
 
 const trendMonths = ["9月", "10月", "11月", "12月", "1月", "2月"]
@@ -227,7 +227,7 @@ export function generateActivityTrend(
     cumBound += periodBound
     const cumBindRate = cumNew > 0 ? (cumBound / cumNew) * 100 : 0
 
-    const momPct = prevCumNew > 0 ? ((cumNew - prevCumNew) / prevCumNew) * 100 : 0
+    const momPct = prevCumNew > 0 ? ((cumNew - prevCumNew) / prevCumNew) * 100 : null
     prevCumNew = cumNew
 
     return {
@@ -235,7 +235,7 @@ export function generateActivityTrend(
       newCust: cumNew,
       bound: cumBound,
       bindRate: +cumBindRate.toFixed(2),
-      momPct: +momPct.toFixed(2),
+      momPct: momPct !== null ? +momPct.toFixed(2) : null,
     }
   })
 }
@@ -246,7 +246,7 @@ export interface WeeklyTrendPoint {
   weeklyNew: number
   weeklyBound: number
   weeklyBindRate: number
-  wowPct: number  // week-over-week % change
+  wowPct: number | null  // week-over-week % change (null for first week)
 }
 
 export function generateWeeklyTrend(
@@ -274,7 +274,7 @@ export function generateWeeklyTrend(
     const weeklyBound = Math.round(weeklyNew * bindRate / 100)
     const weeklyBindRate = weeklyNew > 0 ? (weeklyBound / weeklyNew) * 100 : 0
 
-    const wowPct = prevNew > 0 ? ((weeklyNew - prevNew) / prevNew) * 100 : 0
+    const wowPct = prevNew > 0 ? ((weeklyNew - prevNew) / prevNew) * 100 : null
     prevNew = weeklyNew
 
     return {
@@ -282,7 +282,7 @@ export function generateWeeklyTrend(
       weeklyNew,
       weeklyBound,
       weeklyBindRate: +weeklyBindRate.toFixed(2),
-      wowPct: +wowPct.toFixed(2),
+      wowPct: wowPct !== null ? +wowPct.toFixed(2) : null,
     }
   })
 }

@@ -279,7 +279,7 @@ export function WeeklyPanel({ selectedInstitution }: Props) {
                   <ReferenceLine y={0} stroke="hsl(0,0%,75%)" />
                   <Bar dataKey="wowPct" name="周环比" barSize={24} radius={[2, 2, 0, 0]}>
                     {trendData.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.wowPct >= 0 ? "hsl(0, 85%, 46%)" : "hsl(140, 60%, 40%)"} />
+                      <Cell key={idx} fill={entry.wowPct === null ? "transparent" : entry.wowPct >= 0 ? "hsl(0, 85%, 46%)" : "hsl(140, 60%, 40%)"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -300,7 +300,7 @@ export function WeeklyPanel({ selectedInstitution }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted">
-                <th className="text-center px-3 py-2 font-semibold text-foreground border-b border-border w-[50px]">{"序号"}</th>
+                <th className="text-center px-3 py-2 font-semibold text-foreground border-b border-border w-[60px] whitespace-nowrap">{"序号"}</th>
                 <th className="text-left px-3 py-2 font-semibold text-foreground border-b border-border">{"机构"}</th>
                 <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
                   <SortHeader label="当周新增客户数" field="weeklyNew" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
