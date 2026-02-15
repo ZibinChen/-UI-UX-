@@ -174,13 +174,13 @@ export function generateWeeklyData(
   return { summary, branches }
 }
 
-// ── Trend data for activity progress (monthly or weekly) ──────────
+// ── Trend data for activity progress (cumulative values) ──────────
 export interface CrossSellTrendPoint {
   period: string
-  newCust: number
-  bound: number
-  bindRate: number
-  momPct: number // month-over-month or week-over-week %
+  newCust: number      // cumulative
+  bound: number        // cumulative
+  bindRate: number     // cumulative %
+  momPct: number       // period-over-period % change of the cumulative value
 }
 
 const trendMonths = ["9月", "10月", "11月", "12月", "1月", "2月"]
@@ -193,7 +193,10 @@ export function generateActivityTrend(
   const isSummary = institutionId === "all"
   const periods = mode === "month" ? trendMonths : trendWeeksLabels.slice(0, 12)
 
-  let prevNew = 0
+  let cumNew = 0
+  let cumBound = 0
+  let prevCumNew = 0
+
   return periods.map((period, pi) => {
     // Incremental new customers per period
     const basePeriod = mode === "month" ? 120000 : 30000
@@ -211,18 +214,70 @@ export function generateActivityTrend(
     }
 
     const bindSeed = seeded(hashCode(`cstrend_bind_${mode}_${period}_${institutionId}`))
-    const bindRate = 18 + bindSeed * 10 // 18% ~ 28%
-    const bound = Math.round(periodNew * bindRate / 100)
+    const bindRate = 18 + bindSeed * 10
+    const periodBound = Math.round(periodNew * bindRate / 100)
 
-    const momPct = prevNew > 0 ? ((periodNew - prevNew) / prevNew) * 100 : 0
-    prevNew = periodNew
+    // Accumulate
+    cumNew += periodNew
+    cumBound += periodBound
+    const cumBindRate = cumNew > 0 ? (cumBound / cumNew) * 100 : 0
+
+    const momPct = prevCumNew > 0 ? ((cumNew - prevCumNew) / prevCumNew) * 100 : 0
+    prevCumNew = cumNew
 
     return {
       period,
-      newCust: periodNew,
-      bound,
-      bindRate: +bindRate.toFixed(2),
+      newCust: cumNew,
+      bound: cumBound,
+      bindRate: +cumBindRate.toFixed(2),
       momPct: +momPct.toFixed(2),
+    }
+  })
+}
+
+// ── Weekly trend data (per-week values, not cumulative) ───────────
+export interface WeeklyTrendPoint {
+  period: string
+  weeklyNew: number
+  weeklyBound: number
+  weeklyBindRate: number
+  wowPct: number  // week-over-week % change
+}
+
+export function generateWeeklyTrend(
+  institutionId: string
+): WeeklyTrendPoint[] {
+  const isSummary = institutionId === "all"
+  let prevNew = 0
+
+  return availableWeeks.map((week, wi) => {
+    const basePeriod = 38000 + seeded(hashCode(`weektrend_base_${week.id}`)) * 12000
+    const jitter = 0.9 + seeded(hashCode(`weektrend_${week.id}`)) * 0.2
+    let weeklyNew = Math.round(basePeriod * jitter)
+
+    if (!isSummary) {
+      const shares = computeShares("cs_new_cust", "cur")
+      const idx = branchList.findIndex(b => b.id === institutionId)
+      if (idx >= 0) {
+        const brJitter = 0.9 + seeded(hashCode(`weektrend_br_${week.id}_${institutionId}`)) * 0.2
+        weeklyNew = Math.round(weeklyNew * shares[idx] * brJitter)
+      }
+    }
+
+    const bindSeed = seeded(hashCode(`weektrend_bind_${week.id}_${institutionId}`))
+    const bindRate = 10 + bindSeed * 25
+    const weeklyBound = Math.round(weeklyNew * bindRate / 100)
+    const weeklyBindRate = weeklyNew > 0 ? (weeklyBound / weeklyNew) * 100 : 0
+
+    const wowPct = prevNew > 0 ? ((weeklyNew - prevNew) / prevNew) * 100 : 0
+    prevNew = weeklyNew
+
+    return {
+      period: `W${wi + 1}`,
+      weeklyNew,
+      weeklyBound,
+      weeklyBindRate: +weeklyBindRate.toFixed(2),
+      wowPct: +wowPct.toFixed(2),
     }
   })
 }

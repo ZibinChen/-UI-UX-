@@ -49,7 +49,7 @@ function BarMomTooltip({ active, payload, label }: any) {
       <p className="font-semibold text-foreground mb-1">{label}</p>
       <p className="flex items-center gap-2">
         <span className="w-2 h-2 rounded-full inline-block" style={{ background: v >= 0 ? "hsl(0,85%,46%)" : "hsl(140,60%,40%)" }} />
-        <span className="text-muted-foreground">环比:</span>
+        <span className="text-muted-foreground">{'累计环比:'}</span>
         <span className={cn("font-medium tabular-nums", v >= 0 ? "text-[hsl(0,85%,46%)]" : "text-bank-green")}>
           {v >= 0 ? "+" : ""}{v.toFixed(2)}%
         </span>
@@ -207,7 +207,7 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
             {/* Mode toggle */}
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
-                {activeTrend.label}{'趋势'}
+                {activeTrend.label}{'累计趋势'}
               </h4>
               <div className="flex items-center gap-0">
                 <button
@@ -236,11 +236,11 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
               <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
                 <span className="flex items-center gap-1">
                   <span className="w-3 h-0.5 bg-[hsl(220,70%,45%)] inline-block rounded" />
-                  {activeTrend.label}
+                  {activeTrend.label}{'（累计）'}
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-3 h-2.5 bg-[hsl(0,85%,46%)] inline-block rounded-sm" />
-                  环比变化
+                  {'累计值环比'}
                 </span>
               </div>
               <ResponsiveContainer width="100%" height={200}>
@@ -269,7 +269,7 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
 
             {/* Lower: MoM % bars */}
             <div>
-              <p className="text-[11px] text-muted-foreground mb-2">环比变化 (%)</p>
+              <p className="text-[11px] text-muted-foreground mb-2">{'累计值环比变化 (%)'}</p>
               <ResponsiveContainer width="100%" height={140}>
                 <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />

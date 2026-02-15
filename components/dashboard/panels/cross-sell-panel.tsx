@@ -20,6 +20,9 @@ export function CrossSellPanel({ selectedInstitution, selectedDate }: CrossSellP
 
   return (
     <div className="flex flex-col gap-4">
+      <h2 className="text-base font-bold text-foreground" suppressHydrationWarning>
+        {'交叉销售 — 自动还款绑定"金"喜营销活动'}
+      </h2>
       <TabNavigation
         tabs={subTabs}
         activeTab={activeSubTab}
