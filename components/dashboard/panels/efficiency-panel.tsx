@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip as RTooltip, ResponsiveContainer, Cell,
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip as RTooltip, ResponsiveContainer, Legend,
 } from "recharts"
 import { cn } from "@/lib/utils"
 
@@ -71,33 +71,63 @@ const subTabs = [
   { id: "deposit", label: "对私商户日均存款扣分" },
 ]
 
-// Indicators available for comparison
-const COMPARE_INDICATORS = [
-  { id: "totalScore", label: "得分" },
-  { id: "systemScore", label: "比系统得分" },
-  { id: "depositDeduction", label: "对私商户日均存款扣分" },
-  { id: "efficiencyCust", label: "对私折效客户数" },
-  { id: "annual10k", label: "信用卡年消费1万以上客户" },
-  { id: "newActive", label: "新增活跃客户" },
-  { id: "highendActive", label: "中高端新增活跃客户" },
-  { id: "crossBorder", label: "跨境交易客户" },
-  { id: "growthRate", label: "增速(%)" },
-  { id: "growthRateScore", label: "增速得分率(%)" },
-  { id: "growthIncrScore", label: "增量得分率(%)" },
-  { id: "depositActual", label: "对私商户日均存款(亿元)" },
-  { id: "depositCompletionRate", label: "目标完成率(%)" },
-]
+// ── Indicators per tab (only those visible on the page) ──────────
+const TAB_INDICATORS: Record<string, { id: string; label: string }[]> = {
+  overview: [
+    { id: "totalScore", label: "得分" },
+    { id: "systemScore", label: "比系统得分" },
+    { id: "depositDeduction", label: "对私商户日均存款扣分" },
+  ],
+  system: [
+    { id: "systemScore", label: "比系统得分" },
+    { id: "efficiencyCust", label: "对私折效客户数（2025年）" },
+    { id: "efficiencyCustBase", label: "2024年基数" },
+    { id: "annual10k", label: "信用卡年消费1万以上客户" },
+    { id: "newActive", label: "新增活跃客户" },
+    { id: "highendActive", label: "中高端新增活跃客户" },
+    { id: "crossBorder", label: "跨境交易客户" },
+    { id: "growthRate", label: "增速(%)" },
+    { id: "growthRateScore", label: "增速得分率(%)" },
+    { id: "growthIncrScore", label: "增量得分率(%)" },
+  ],
+  deposit: [
+    { id: "depositDeduction", label: "对私商户日均存款扣分" },
+    { id: "depositActual", label: "对私商户日均存款(亿元)" },
+    { id: "depositTarget", label: "目标(亿元)" },
+    { id: "depositCompletionRate", label: "目标完成率(%)" },
+  ],
+}
 
 const COMPARE_COLORS = [
   "hsl(220, 70%, 50%)", "hsl(0, 85%, 50%)", "hsl(140, 55%, 40%)",
   "hsl(35, 90%, 50%)", "hsl(280, 60%, 55%)", "hsl(180, 55%, 40%)",
 ]
 
+// ── Tooltip ──────────────────────────────────────────────────────
+function CompareLineTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="bg-card border border-border rounded px-3 py-2 shadow-lg text-xs min-w-[180px]">
+      <p className="font-semibold text-foreground mb-1">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <p key={i} className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.color }} />
+          <span className="text-muted-foreground truncate max-w-[100px]">{p.name}:</span>
+          <span className="font-medium text-foreground tabular-nums">
+            {typeof p.value === "number" ? p.value.toLocaleString("zh-CN", { maximumFractionDigits: 2 }) : p.value}
+          </span>
+        </p>
+      ))}
+    </div>
+  )
+}
+
+// ── Main Panel ───────────────────────────────────────────────────
 export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [selectedQuarter, setSelectedQuarter] = useState(availableQuarters[availableQuarters.length - 1].id)
 
-  // Branch comparison dialog state
+  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogStep, setDialogStep] = useState<"branch" | "indicator">("branch")
   const [selectedBranches, setSelectedBranches] = useState<string[]>([])
@@ -113,20 +143,22 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
   const highlightId = selectedInstitution === "all" ? null : selectedInstitution
   const quarterLabel = availableQuarters.find(q => q.id === selectedQuarter)?.label ?? selectedQuarter
 
-  // Open compare dialog, force-include selected institution
+  // Available indicators for current tab
+  const currentTabIndicators = TAB_INDICATORS[activeTab] ?? TAB_INDICATORS.overview
+
+  // Open dialog: force-include selected institution, reset indicator selection to current tab
   const openCompareDialog = useCallback(() => {
     const initial: string[] = []
     if (selectedInstitution !== "all") {
       initial.push(selectedInstitution)
     }
     setSelectedBranches(initial)
-    setSelectedIndicators(["totalScore"])
+    setSelectedIndicators([currentTabIndicators[0]?.id ?? "totalScore"])
     setDialogStep("branch")
     setDialogOpen(true)
-  }, [selectedInstitution])
+  }, [selectedInstitution, currentTabIndicators])
 
   const toggleBranch = (branchId: string) => {
-    // Don't allow deselecting the forced institution
     if (branchId === selectedInstitution && selectedInstitution !== "all") return
     setSelectedBranches(prev =>
       prev.includes(branchId)
@@ -149,29 +181,50 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
     setDialogOpen(false)
   }
 
-  // Build comparison chart data
-  const comparisonChartData = useMemo(() => {
+  // Clear comparison when switching tabs
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    setConfirmedBranches([])
+    setConfirmedIndicators([])
+  }
+
+  // ── Build trend comparison data (X=quarter, one line per branch) ──
+  const trendChartData = useMemo(() => {
     if (confirmedBranches.length === 0 || confirmedIndicators.length === 0) return []
+
     return confirmedIndicators.map(indId => {
-      const indDef = COMPARE_INDICATORS.find(i => i.id === indId)
-      const data = confirmedBranches.map(bId => {
-        const row = rows.find(r => r.branchId === bId)
-        const br = efficiencyBranchList.find(b => b.id === bId)
-        return {
-          name: br?.name ?? bId,
-          value: row ? (row[indId as keyof EfficiencyRow] as number) : 0,
-        }
+      const indDef = currentTabIndicators.find(i => i.id === indId)
+
+      // Generate data for each quarter
+      const quarterData = availableQuarters.map(q => {
+        const { rows: qRows } = generateEfficiencyData(q.id)
+        const entry: Record<string, any> = { quarter: q.label.replace("年", "").replace("季度", "Q") }
+        confirmedBranches.forEach(bId => {
+          const row = qRows.find(r => r.branchId === bId)
+          const br = efficiencyBranchList.find(b => b.id === bId)
+          entry[br?.name ?? bId] = row ? (row[indId as keyof EfficiencyRow] as number) : 0
+        })
+        return entry
       })
-      return { indicatorId: indId, label: indDef?.label ?? indId, data }
+
+      return {
+        indicatorId: indId,
+        label: indDef?.label ?? indId,
+        data: quarterData,
+        branches: confirmedBranches.map(bId => {
+          const br = efficiencyBranchList.find(b => b.id === bId)
+          return br?.name ?? bId
+        }),
+      }
     })
-  }, [confirmedBranches, confirmedIndicators, rows])
+  }, [confirmedBranches, confirmedIndicators, currentTabIndicators])
 
   return (
     <div className="flex flex-col gap-6">
       {/* Sub-tabs */}
-      <TabNavigation tabs={subTabs} activeTab={activeTab} onTabChange={setActiveTab} variant="pill" />
+      <TabNavigation tabs={subTabs} activeTab={activeTab} onTabChange={handleTabChange} variant="pill" />
 
-      {/* Title + quarter selector (centered like other tabs) */}
+      {/* Title card with quarter selector + compare button (matching other tabs) */}
       <div className="bg-card rounded border border-border px-4 py-3" suppressHydrationWarning>
         <h2 className="text-base font-semibold text-foreground text-center" suppressHydrationWarning>
           {`对私折效指标表（${quarterLabel}）`}
@@ -197,76 +250,12 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
             className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-border bg-card text-foreground hover:bg-muted transition-colors"
           >
             <GitCompareArrows className="w-3.5 h-3.5" />
-            {"分行对比"}
+            {"分行趋势对比"}
           </button>
         </div>
       </div>
 
-      {/* Comparison charts (shown when confirmed) */}
-      {comparisonChartData.length > 0 && !dialogOpen && (
-        <div className="bg-card rounded border border-border p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-foreground">
-              {"分行对比"}
-            </h4>
-            <button
-              onClick={() => { setConfirmedBranches([]); setConfirmedIndicators([]) }}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {"收起"}
-            </button>
-          </div>
-          <div className={cn(
-            "grid gap-4",
-            comparisonChartData.length === 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
-          )}>
-            {comparisonChartData.map((chart) => (
-              <div key={chart.indicatorId} className="border border-border rounded p-3">
-                <p className="text-xs font-semibold text-foreground mb-2">{chart.label}</p>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={chart.data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 10, fill: "hsl(0,0%,45%)" }}
-                      interval={0}
-                      angle={-30}
-                      textAnchor="end"
-                      height={50}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10, fill: "hsl(0,0%,45%)" }}
-                      width={55}
-                      tickFormatter={v => Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}
-                    />
-                    <RTooltip
-                      content={({ active, payload, label }: any) => {
-                        if (!active || !payload?.length) return null
-                        return (
-                          <div className="bg-card border border-border rounded px-3 py-2 shadow-lg text-xs">
-                            <p className="font-semibold text-foreground mb-1">{label}</p>
-                            <p className="text-foreground tabular-nums">
-                              {typeof payload[0].value === "number"
-                                ? payload[0].value.toLocaleString("zh-CN", { maximumFractionDigits: 2 })
-                                : payload[0].value}
-                            </p>
-                          </div>
-                        )
-                      }}
-                    />
-                    <Bar dataKey="value" barSize={30} radius={[3, 3, 0, 0]}>
-                      {chart.data.map((_, idx) => (
-                        <Cell key={idx} fill={COMPARE_COLORS[idx % COMPARE_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* Tables */}
       {activeTab === "overview" && (
         <OverviewTable rows={rows} highlightId={highlightId} />
       )}
@@ -277,7 +266,62 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
         <DepositDeductionTable rows={rows} highlightId={highlightId} />
       )}
 
-      {/* Branch Comparison Dialog */}
+      {/* Trend comparison charts (below table) */}
+      {trendChartData.length > 0 && !dialogOpen && (
+        <div className="bg-card rounded border border-border p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-foreground">
+              {"分行趋势对比"}
+            </h4>
+            <button
+              onClick={() => { setConfirmedBranches([]); setConfirmedIndicators([]) }}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {"收起"}
+            </button>
+          </div>
+          <div className={cn(
+            "grid gap-6",
+            trendChartData.length === 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
+          )}>
+            {trendChartData.map((chart) => (
+              <div key={chart.indicatorId} className="border border-border rounded p-3">
+                <p className="text-xs font-semibold text-foreground mb-2">{chart.label}</p>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={chart.data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
+                    <XAxis
+                      dataKey="quarter"
+                      tick={{ fontSize: 10, fill: "hsl(0,0%,45%)" }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "hsl(0,0%,45%)" }}
+                      width={65}
+                      tickFormatter={v => Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}
+                    />
+                    <RTooltip content={<CompareLineTooltip />} />
+                    <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: 11 }} />
+                    {chart.branches.map((name, idx) => (
+                      <Line
+                        key={name}
+                        type="monotone"
+                        dataKey={name}
+                        name={name}
+                        stroke={COMPARE_COLORS[idx % COMPARE_COLORS.length]}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: COMPARE_COLORS[idx % COMPARE_COLORS.length] }}
+                        activeDot={{ r: 5 }}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Branch Trend Comparison Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
@@ -286,8 +330,8 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
             </DialogTitle>
             <DialogDescription>
               {dialogStep === "branch"
-                ? `选择 1-6 个分行进行对比（已选 ${selectedBranches.length}/6）${selectedInstitution !== "all" ? "，当前机构已自动选中" : ""}`
-                : `选择 1-4 个指标进行对比（已选 ${selectedIndicators.length}/4）`
+                ? `选择 1-6 个分行进行趋势对比（已选 ${selectedBranches.length}/6）${selectedInstitution !== "all" ? "，当前机构已自动选中" : ""}`
+                : `选择 1-4 个指标进行趋势对比（已选 ${selectedIndicators.length}/4）`
               }
             </DialogDescription>
           </DialogHeader>
@@ -329,7 +373,7 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
 
             {dialogStep === "indicator" && (
               <div className="grid grid-cols-1 gap-2 py-2">
-                {COMPARE_INDICATORS.map(ind => {
+                {currentTabIndicators.map(ind => {
                   const checked = selectedIndicators.includes(ind.id)
                   const disabled = !checked && selectedIndicators.length >= 4
                   return (
