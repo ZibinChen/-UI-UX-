@@ -8,18 +8,21 @@ import { TabNavigation } from "./tab-navigation"
 import { CreditCardPanel } from "./panels/credit-card-panel"
 import { KeyCustomerPanel } from "./panels/key-customer-panel"
 import { CrossSellPanel } from "./panels/cross-sell-panel"
+import { EfficiencyPanel } from "./panels/efficiency-panel"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 const mainTabs = [
   { id: "comprehensive", label: '综合经营计划' },
   { id: "key-customer", label: '信用卡重点客群' },
   { id: "cross-sell", label: '交叉销售' },
+  { id: "efficiency", label: '对私折效指标' },
 ]
 
 const BREADCRUMB_MAP: Record<string, string[]> = {
   comprehensive: ['管理驾驶舱', '综合经营计划'],
   'key-customer': ['管理驾驶舱', '信用卡重点客群'],
   'cross-sell': ['管理驾驶舱', '交叉销售'],
+  efficiency: ['管理驾驶舱', '对私折效指标'],
 }
 
 export function DashboardShell() {
@@ -76,6 +79,12 @@ export function DashboardShell() {
               )}
               {activeMainTab === "cross-sell" && (
                 <CrossSellPanel
+                  selectedInstitution={selectedInstitution}
+                  selectedDate={selectedDate}
+                />
+              )}
+              {activeMainTab === "efficiency" && (
+                <EfficiencyPanel
                   selectedInstitution={selectedInstitution}
                   selectedDate={selectedDate}
                 />
