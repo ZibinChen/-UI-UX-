@@ -1,14 +1,24 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useCallback } from "react"
 import {
   generateEfficiencyData,
   availableQuarters,
   subIndicators,
+  efficiencyBranchList,
   type EfficiencyRow,
 } from "@/lib/efficiency-data"
 import { TabNavigation } from "../tab-navigation"
-import { ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react"
+import { ArrowUpDown, ChevronUp, ChevronDown, GitCompareArrows } from "lucide-react"
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip as RTooltip, ResponsiveContainer, Cell,
+} from "recharts"
+import { cn } from "@/lib/utils"
 
 interface EfficiencyPanelProps {
   selectedInstitution: string
@@ -57,13 +67,43 @@ const tdBase = "px-2 py-1.5 text-xs border-b border-r border-border tabular-nums
 
 const subTabs = [
   { id: "overview", label: "得分总览" },
-  { id: "system",   label: "比系统得分明细" },
-  { id: "deposit",  label: "对私商户日均存款扣分" },
+  { id: "system", label: "比系统得分明细" },
+  { id: "deposit", label: "对私商户日均存款扣分" },
+]
+
+// Indicators available for comparison
+const COMPARE_INDICATORS = [
+  { id: "totalScore", label: "得分" },
+  { id: "systemScore", label: "比系统得分" },
+  { id: "depositDeduction", label: "对私商户日均存款扣分" },
+  { id: "efficiencyCust", label: "对私折效客户数" },
+  { id: "annual10k", label: "信用卡年消费1万以上客户" },
+  { id: "newActive", label: "新增活跃客户" },
+  { id: "highendActive", label: "中高端新增活跃客户" },
+  { id: "crossBorder", label: "跨境交易客户" },
+  { id: "growthRate", label: "增速(%)" },
+  { id: "growthRateScore", label: "增速得分率(%)" },
+  { id: "growthIncrScore", label: "增量得分率(%)" },
+  { id: "depositActual", label: "对私商户日均存款(亿元)" },
+  { id: "depositCompletionRate", label: "目标完成率(%)" },
+]
+
+const COMPARE_COLORS = [
+  "hsl(220, 70%, 50%)", "hsl(0, 85%, 50%)", "hsl(140, 55%, 40%)",
+  "hsl(35, 90%, 50%)", "hsl(280, 60%, 55%)", "hsl(180, 55%, 40%)",
 ]
 
 export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [selectedQuarter, setSelectedQuarter] = useState(availableQuarters[availableQuarters.length - 1].id)
+
+  // Branch comparison dialog state
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogStep, setDialogStep] = useState<"branch" | "indicator">("branch")
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([])
+  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([])
+  const [confirmedBranches, setConfirmedBranches] = useState<string[]>([])
+  const [confirmedIndicators, setConfirmedIndicators] = useState<string[]>([])
 
   const { rows } = useMemo(
     () => generateEfficiencyData(selectedQuarter),
@@ -73,34 +113,159 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
   const highlightId = selectedInstitution === "all" ? null : selectedInstitution
   const quarterLabel = availableQuarters.find(q => q.id === selectedQuarter)?.label ?? selectedQuarter
 
+  // Open compare dialog, force-include selected institution
+  const openCompareDialog = useCallback(() => {
+    const initial: string[] = []
+    if (selectedInstitution !== "all") {
+      initial.push(selectedInstitution)
+    }
+    setSelectedBranches(initial)
+    setSelectedIndicators(["totalScore"])
+    setDialogStep("branch")
+    setDialogOpen(true)
+  }, [selectedInstitution])
+
+  const toggleBranch = (branchId: string) => {
+    // Don't allow deselecting the forced institution
+    if (branchId === selectedInstitution && selectedInstitution !== "all") return
+    setSelectedBranches(prev =>
+      prev.includes(branchId)
+        ? prev.filter(b => b !== branchId)
+        : prev.length >= 6 ? prev : [...prev, branchId]
+    )
+  }
+
+  const toggleIndicator = (indicatorId: string) => {
+    setSelectedIndicators(prev =>
+      prev.includes(indicatorId)
+        ? prev.filter(i => i !== indicatorId)
+        : prev.length >= 4 ? prev : [...prev, indicatorId]
+    )
+  }
+
+  const confirmComparison = () => {
+    setConfirmedBranches([...selectedBranches])
+    setConfirmedIndicators([...selectedIndicators])
+    setDialogOpen(false)
+  }
+
+  // Build comparison chart data
+  const comparisonChartData = useMemo(() => {
+    if (confirmedBranches.length === 0 || confirmedIndicators.length === 0) return []
+    return confirmedIndicators.map(indId => {
+      const indDef = COMPARE_INDICATORS.find(i => i.id === indId)
+      const data = confirmedBranches.map(bId => {
+        const row = rows.find(r => r.branchId === bId)
+        const br = efficiencyBranchList.find(b => b.id === bId)
+        return {
+          name: br?.name ?? bId,
+          value: row ? (row[indId as keyof EfficiencyRow] as number) : 0,
+        }
+      })
+      return { indicatorId: indId, label: indDef?.label ?? indId, data }
+    })
+  }, [confirmedBranches, confirmedIndicators, rows])
+
   return (
     <div className="flex flex-col gap-6">
       {/* Sub-tabs */}
       <TabNavigation tabs={subTabs} activeTab={activeTab} onTabChange={setActiveTab} variant="pill" />
 
-      {/* Title + quarter selector */}
-      <div className="bg-card rounded border border-border px-4 py-3 flex items-center justify-between" suppressHydrationWarning>
-        <div>
-          <h2 className="text-base font-semibold text-foreground" suppressHydrationWarning>
-            {`对私折效指标表（${quarterLabel}）`}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5" suppressHydrationWarning>
-            {"按季度结算，每季度计算一次得分"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{"季度："}</span>
-          <select
-            value={selectedQuarter}
-            onChange={(e) => setSelectedQuarter(e.target.value)}
-            className="text-xs border border-border rounded px-2 py-1 bg-card text-foreground"
+      {/* Title + quarter selector (centered like other tabs) */}
+      <div className="bg-card rounded border border-border px-4 py-3" suppressHydrationWarning>
+        <h2 className="text-base font-semibold text-foreground text-center" suppressHydrationWarning>
+          {`对私折效指标表（${quarterLabel}）`}
+        </h2>
+        <p className="text-xs text-muted-foreground text-center mt-1" suppressHydrationWarning>
+          {"按季度结算，每季度计算一次得分"}
+        </p>
+        <div className="flex items-center justify-center gap-4 mt-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{"季度："}</span>
+            <select
+              value={selectedQuarter}
+              onChange={(e) => setSelectedQuarter(e.target.value)}
+              className="text-xs border border-border rounded px-2 py-1 bg-card text-foreground"
+            >
+              {availableQuarters.map(q => (
+                <option key={q.id} value={q.id}>{q.label}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={openCompareDialog}
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-border bg-card text-foreground hover:bg-muted transition-colors"
           >
-            {availableQuarters.map(q => (
-              <option key={q.id} value={q.id}>{q.label}</option>
-            ))}
-          </select>
+            <GitCompareArrows className="w-3.5 h-3.5" />
+            {"分行对比"}
+          </button>
         </div>
       </div>
+
+      {/* Comparison charts (shown when confirmed) */}
+      {comparisonChartData.length > 0 && !dialogOpen && (
+        <div className="bg-card rounded border border-border p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-foreground">
+              {"分行对比"}
+            </h4>
+            <button
+              onClick={() => { setConfirmedBranches([]); setConfirmedIndicators([]) }}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {"收起"}
+            </button>
+          </div>
+          <div className={cn(
+            "grid gap-4",
+            comparisonChartData.length === 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
+          )}>
+            {comparisonChartData.map((chart) => (
+              <div key={chart.indicatorId} className="border border-border rounded p-3">
+                <p className="text-xs font-semibold text-foreground mb-2">{chart.label}</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={chart.data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 10, fill: "hsl(0,0%,45%)" }}
+                      interval={0}
+                      angle={-30}
+                      textAnchor="end"
+                      height={50}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "hsl(0,0%,45%)" }}
+                      width={55}
+                      tickFormatter={v => Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}
+                    />
+                    <RTooltip
+                      content={({ active, payload, label }: any) => {
+                        if (!active || !payload?.length) return null
+                        return (
+                          <div className="bg-card border border-border rounded px-3 py-2 shadow-lg text-xs">
+                            <p className="font-semibold text-foreground mb-1">{label}</p>
+                            <p className="text-foreground tabular-nums">
+                              {typeof payload[0].value === "number"
+                                ? payload[0].value.toLocaleString("zh-CN", { maximumFractionDigits: 2 })
+                                : payload[0].value}
+                            </p>
+                          </div>
+                        )
+                      }}
+                    />
+                    <Bar dataKey="value" barSize={30} radius={[3, 3, 0, 0]}>
+                      {chart.data.map((_, idx) => (
+                        <Cell key={idx} fill={COMPARE_COLORS[idx % COMPARE_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {activeTab === "overview" && (
         <OverviewTable rows={rows} highlightId={highlightId} />
@@ -111,12 +276,142 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
       {activeTab === "deposit" && (
         <DepositDeductionTable rows={rows} highlightId={highlightId} />
       )}
+
+      {/* Branch Comparison Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              {dialogStep === "branch" ? "第一步：选择分行" : "第二步：选择对比指标"}
+            </DialogTitle>
+            <DialogDescription>
+              {dialogStep === "branch"
+                ? `选择 1-6 个分行进行对比（已选 ${selectedBranches.length}/6）${selectedInstitution !== "all" ? "，当前机构已自动选中" : ""}`
+                : `选择 1-4 个指标进行对比（已选 ${selectedIndicators.length}/4）`
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="overflow-y-auto flex-1 -mx-6 px-6">
+            {dialogStep === "branch" && (
+              <div className="grid grid-cols-2 gap-2 py-2">
+                {efficiencyBranchList.map(b => {
+                  const checked = selectedBranches.includes(b.id)
+                  const isForced = b.id === selectedInstitution && selectedInstitution !== "all"
+                  const disabled = !checked && selectedBranches.length >= 6
+                  return (
+                    <label
+                      key={b.id}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded border text-sm cursor-pointer transition-colors",
+                        checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
+                        (disabled && !checked) && "opacity-40 cursor-not-allowed",
+                        isForced && "ring-1 ring-primary/40"
+                      )}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        disabled={isForced || (disabled && !checked)}
+                        onCheckedChange={() => toggleBranch(b.id)}
+                      />
+                      <span className={cn(
+                        "truncate",
+                        checked ? "text-primary font-medium" : "text-foreground",
+                        isForced && "font-semibold"
+                      )}>
+                        {b.name}{isForced ? "（当前）" : ""}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+
+            {dialogStep === "indicator" && (
+              <div className="grid grid-cols-1 gap-2 py-2">
+                {COMPARE_INDICATORS.map(ind => {
+                  const checked = selectedIndicators.includes(ind.id)
+                  const disabled = !checked && selectedIndicators.length >= 4
+                  return (
+                    <label
+                      key={ind.id}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded border text-sm cursor-pointer transition-colors",
+                        checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
+                        (disabled && !checked) && "opacity-40 cursor-not-allowed"
+                      )}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        disabled={disabled && !checked}
+                        onCheckedChange={() => toggleIndicator(ind.id)}
+                      />
+                      <span className={cn("truncate", checked ? "text-primary font-medium" : "text-foreground")}>
+                        {ind.label}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            {dialogStep === "branch" ? (
+              <>
+                <button
+                  onClick={() => {
+                    const initial = selectedInstitution !== "all" ? [selectedInstitution] : []
+                    setSelectedBranches(initial)
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {"清空选择"}
+                </button>
+                <button
+                  onClick={() => setDialogStep("indicator")}
+                  disabled={selectedBranches.length < 1}
+                  className={cn(
+                    "px-4 py-2 rounded text-sm font-medium transition-colors",
+                    selectedBranches.length >= 1
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                  )}
+                >
+                  {`下一步：选择指标 (${selectedBranches.length})`}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setDialogStep("branch")}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {"上一步"}
+                </button>
+                <button
+                  onClick={confirmComparison}
+                  disabled={selectedIndicators.length < 1}
+                  className={cn(
+                    "px-4 py-2 rounded text-sm font-medium transition-colors",
+                    selectedIndicators.length >= 1
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                  )}
+                >
+                  {`确认对比 (${selectedIndicators.length})`}
+                </button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
 /* ================================================================
-   Tab 1: 得分总览 — 排名 / 机构 / 得分 / 比系统得分 / 扣分
+   Tab 1: 得分总览
    ================================================================ */
 function OverviewTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlightId: string | null }) {
   const { toggle, SortIcon, sort } = useSortable()
@@ -161,8 +456,6 @@ function OverviewTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlight
           </tbody>
         </table>
       </div>
-
-      {/* Formula summary */}
       <div className="bg-card rounded border border-border px-4 py-3">
         <h3 className="text-sm font-semibold text-foreground mb-2">{"评分公式"}</h3>
         <p className="text-xs text-muted-foreground">
@@ -175,11 +468,6 @@ function OverviewTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlight
 
 /* ================================================================
    Tab 2: 比系统得分明细
-   Step flow:
-     四大客群 -> 公式 -> 折效客户数 (=2025年)
-     -> vs 2024基数 -> 增速 / 增量
-     -> 增速得分率(比重70%) / 增量得分率(比重30%)
-     -> (增速得分率×70% + 增量得分率×30%) × 100 / 10 -> 比系统得分
    ================================================================ */
 function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlightId: string | null }) {
   const { toggle, SortIcon, sort } = useSortable()
@@ -190,7 +478,6 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
       <div className="bg-card rounded border border-border overflow-x-auto">
         <table className="w-full border-collapse min-w-[1500px]">
           <thead>
-            {/* Group headers row */}
             <tr className="bg-muted/60">
               <th colSpan={2} className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border" />
               <th colSpan={4} className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border text-center text-foreground">
@@ -212,13 +499,11 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
                 {"结果"}
               </th>
             </tr>
-            {/* Column headers */}
             <tr className="bg-muted/40">
               <th className={`${thBase} text-center w-[60px]`} onClick={() => toggle("rank")}>
                 {"排名"}<SortIcon col="rank" />
               </th>
               <th className={`${thBase} text-left min-w-[80px]`}>{"机构"}</th>
-              {/* 4 sub-indicators */}
               <th className={`${thBase} text-right`} onClick={() => toggle("annual10k")}>
                 {"信用卡年消费"}<br />{"1万以上客户"}<SortIcon col="annual10k" />
               </th>
@@ -231,14 +516,12 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
               <th className={`${thBase} text-right`} onClick={() => toggle("crossBorder")}>
                 {"跨境交易客户"}<SortIcon col="crossBorder" />
               </th>
-              {/* formula -> 折效客户数 = 2025年 */}
               <th className={`${thBase} text-right`} onClick={() => toggle("efficiencyCust")}>
                 {"对私折效客户数"}<br />{"（2025年）"}<SortIcon col="efficiencyCust" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("efficiencyCustBase")}>
                 {"2024年基数"}<SortIcon col="efficiencyCustBase" />
               </th>
-              {/* 增速 */}
               <th className={`${thBase} text-right`} onClick={() => toggle("growthRate")}>
                 {"增速"}<SortIcon col="growthRate" />
               </th>
@@ -247,7 +530,6 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
                 <span className="font-normal text-muted-foreground">{"(占比70%)"}</span>
                 <SortIcon col="growthRateScore" />
               </th>
-              {/* 增量 */}
               <th className={`${thBase} text-right`} onClick={() => toggle("growthIncrement")}>
                 {"增量"}<SortIcon col="growthIncrement" />
               </th>
@@ -256,7 +538,6 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
                 <span className="font-normal text-muted-foreground">{"(占比30%)"}</span>
                 <SortIcon col="growthIncrScore" />
               </th>
-              {/* 比系统得分 */}
               <th className={`${thBase} text-right border-r-0`} onClick={() => toggle("systemScore")}>
                 {"比系统得分"}<SortIcon col="systemScore" />
               </th>
@@ -288,8 +569,6 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
           </tbody>
         </table>
       </div>
-
-      {/* Formula breakdown card */}
       <div className="bg-card rounded border border-border px-4 py-3">
         <h3 className="text-sm font-semibold text-foreground mb-2">{"计算公式"}</h3>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
@@ -314,7 +593,6 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
 
 /* ================================================================
    Tab 3: 对私商户日均存款扣分
-   日均存款(亿元) / 目标(亿元) / 完成率 / 扣分
    ================================================================ */
 function DepositDeductionTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlightId: string | null }) {
   const { toggle, SortIcon, sort } = useSortable()
@@ -368,8 +646,6 @@ function DepositDeductionTable({ rows, highlightId }: { rows: EfficiencyRow[]; h
           </tbody>
         </table>
       </div>
-
-      {/* Deduction rules card */}
       <div className="bg-card rounded border border-border px-4 py-3">
         <h3 className="text-sm font-semibold text-foreground mb-2">{"扣分规则"}</h3>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
