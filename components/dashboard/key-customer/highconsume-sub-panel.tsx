@@ -11,27 +11,36 @@ interface Props {
   sectionTitle: string
 }
 
-// Group structure: top-level tab -> its direct children shown in KPI sidebar
+// 3 groups under 中高消费客户数, each with its own children
 const groups = [
   {
-    id: "kc_hc_total",
-    label: "中高消费客户总览",
-    children: [
-      { id: "kc_hc_downgrade", label: "中高消费降级客户", parentId: "kc_hc_total" },
-      { id: "kc_hc_transfer", label: "消费转他行客户", parentId: "kc_hc_total" },
-      { id: "kc_hc_maintain", label: "中高消费维持客户", parentId: "kc_hc_total" },
-      { id: "kc_hc_upgrade", label: "中高消费升级客户", parentId: "kc_hc_total" },
-      { id: "kc_hc_scene", label: "中高消费大额场景升级客户", parentId: "kc_hc_total" },
-      { id: "kc_hc_asset", label: "中高资产消费升级客户", parentId: "kc_hc_total" },
+    id: "kc_hc_downgrade",
+    label: "中高消费降级客户",
+    // parent + L2 children
+    kpis: [
+      { id: "kc_hc_downgrade", label: "中高消费降级客户" },
+      { id: "kc_hc_lost",      label: "中高消费流失客户",           parentId: "kc_hc_downgrade" },
+      { id: "kc_hc_blocked",   label: "用卡受阻-销户客户",          parentId: "kc_hc_downgrade" },
+      { id: "kc_hc_inactive",  label: "用卡受阻-到期换卡未激活客户", parentId: "kc_hc_downgrade" },
+      { id: "kc_hc_transfer",  label: "消费转他行客户",             parentId: "kc_hc_downgrade" },
     ],
   },
   {
-    id: "kc_hc_downgrade",
-    label: "降级客户明细",
-    children: [
-      { id: "kc_hc_lost", label: "中高消费流失客户", parentId: "kc_hc_downgrade" },
-      { id: "kc_hc_blocked", label: "用卡受阻-销户客户", parentId: "kc_hc_downgrade" },
-      { id: "kc_hc_inactive", label: "用卡受阻-到期换卡未激活客户", parentId: "kc_hc_downgrade" },
+    id: "kc_hc_maintain",
+    label: "中高消费维持客户",
+    // Only the parent, no children
+    kpis: [
+      { id: "kc_hc_maintain", label: "中高消费维持客户" },
+    ],
+  },
+  {
+    id: "kc_hc_upgrade",
+    label: "中高消费升级客户",
+    // parent + L2 children
+    kpis: [
+      { id: "kc_hc_upgrade", label: "中高消费升级客户" },
+      { id: "kc_hc_scene",   label: "中高消费大额场景升级客户", parentId: "kc_hc_upgrade" },
+      { id: "kc_hc_asset",   label: "中高资产消费升级客户",     parentId: "kc_hc_upgrade" },
     ],
   },
 ]
@@ -45,14 +54,25 @@ export function HighconsumeSubPanel({ selectedInstitution, selectedDate, section
     [selectedInstitution, selectedDate]
   )
 
-  // KPI defs: the group parent + its children (flat, 1 level only)
-  const kpiDefs = useMemo(() => {
-    const parentDef = { id: group.id, label: group.label.replace("明细", "").replace("总览", "") }
-    return [parentDef, ...group.children]
-  }, [group])
-
   return (
     <div className="flex flex-col gap-4">
+      {/* Top-level: total KPI card for 中高消费客户数 */}
+      {(() => {
+        const total = indicators.find(r => r.id === "kc_hc_total")
+        if (!total) return null
+        return (
+          <div className="rounded border border-border bg-card px-4 py-3">
+            <p className="text-xs text-muted-foreground">{total.name}</p>
+            <p className="text-lg font-semibold text-foreground">
+              {total.value} <span className="text-xs font-normal text-muted-foreground">{total.unit}</span>
+            </p>
+            <p className={cn("text-xs", total.comparisonRaw >= 0 ? "text-bank-red" : "text-bank-green")}>
+              {total.comparisonType} {total.comparison}
+            </p>
+          </div>
+        )
+      })()}
+
       {/* Horizontal group tabs */}
       <div className="flex items-center gap-1 flex-wrap">
         {groups.map((g) => (
@@ -72,7 +92,7 @@ export function HighconsumeSubPanel({ selectedInstitution, selectedDate, section
       </div>
 
       <DetailPanel
-        kpiDefs={kpiDefs}
+        kpiDefs={group.kpis}
         indicators={indicators}
         selectedInstitution={selectedInstitution}
         selectedDate={selectedDate}

@@ -152,17 +152,17 @@ const keyCustomerDefs: Def[] = [
   { id: "kc_wealth_mgmt",   name: "理财客户",         indent: 1, category: "highend",     unit: "万户", comparisonType: "较年初", nationalTotal: 680,  nationalYearStart: 645 },
   { id: "kc_wealth",        name: "财富客户",         indent: 1, category: "highend",     unit: "万户", comparisonType: "较年初", nationalTotal: 520,  nationalYearStart: 492 },
   { id: "kc_private",       name: "私行客户",         indent: 1, category: "highend",     unit: "万户", comparisonType: "较年初", nationalTotal: 320,  nationalYearStart: 298 },
-  // High-consumption
-  { id: "kc_hc_total",     name: "信用卡中高消费客户数", indent: 0, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 2156, nationalYearStart: 2020 },
-  { id: "kc_hc_downgrade", name: "中高消费降级客户",    indent: 0, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 385,  nationalYearStart: 410 },
-  { id: "kc_hc_lost",      name: "中高消费流失客户",    indent: 1, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 128,   nationalYearStart: 142 },
-  { id: "kc_hc_blocked",   name: "用卡受阻-销户客户",   indent: 1, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 96,    nationalYearStart: 105 },
-  { id: "kc_hc_inactive",  name: "用卡受阻-到期换卡未激活客户", indent: 1, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 161, nationalYearStart: 163 },
-  { id: "kc_hc_transfer",  name: "消费转他行客户",      indent: 0, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 218,   nationalYearStart: 205 },
-  { id: "kc_hc_maintain",  name: "中高消费维持客户",    indent: 0, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 1082, nationalYearStart: 1005 },
-  { id: "kc_hc_upgrade",   name: "中高消费升级客户",    indent: 0, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 689,  nationalYearStart: 605 },
-  { id: "kc_hc_scene",     name: "中高消费大额场景升级客户", indent: 0, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 245, nationalYearStart: 218 },
-  { id: "kc_hc_asset",     name: "中高资产消费升级客户", indent: 0, category: "highconsume", unit: "万户", comparisonType: "同比", nationalTotal: 312,   nationalYearStart: 276 },
+  // High-consumption: L0 -> L1 -> L2
+  { id: "kc_hc_total",     name: "信用卡中高消费客户数",       indent: 0, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 2156, nationalYearStart: 2020 },
+  { id: "kc_hc_downgrade", name: "中高消费降级客户",           indent: 1, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 385,  nationalYearStart: 410 },
+  { id: "kc_hc_lost",      name: "中高消费流失客户",           indent: 2, category: "highconsume", unit: "万户", comparisonType: "同比",   nationalTotal: 128,  nationalYearStart: 142 },
+  { id: "kc_hc_blocked",   name: "用卡受阻-销户客户",          indent: 2, category: "highconsume", unit: "万户", comparisonType: "同比",   nationalTotal: 96,   nationalYearStart: 105 },
+  { id: "kc_hc_inactive",  name: "用卡受阻-到期换卡未激活客户", indent: 2, category: "highconsume", unit: "万户", comparisonType: "同比",   nationalTotal: 161,  nationalYearStart: 163 },
+  { id: "kc_hc_transfer",  name: "消费转他行客户",             indent: 2, category: "highconsume", unit: "万户", comparisonType: "同比",   nationalTotal: 218,  nationalYearStart: 205 },
+  { id: "kc_hc_maintain",  name: "中高消费维持客户",           indent: 1, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 1082, nationalYearStart: 1005 },
+  { id: "kc_hc_upgrade",   name: "中高消费升级客户",           indent: 1, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 689,  nationalYearStart: 605 },
+  { id: "kc_hc_scene",     name: "中高消费大额场景升级客户",    indent: 2, category: "highconsume", unit: "万户", comparisonType: "同比",   nationalTotal: 245,  nationalYearStart: 218 },
+  { id: "kc_hc_asset",     name: "中高资产消费升级客户",        indent: 2, category: "highconsume", unit: "万户", comparisonType: "同比",   nationalTotal: 312,  nationalYearStart: 276 },
 ]
 
 // ── Compute normalized shares for a specific indicator ────────────
