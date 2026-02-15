@@ -317,14 +317,6 @@ export function WeeklyPanel({ selectedInstitution }: Props) {
               </tr>
             </thead>
             <tbody>
-              <tr className="bg-muted/60 font-semibold">
-                <td className="text-center px-3 py-2 border-b border-border" />
-                <td className="text-left px-3 py-2 border-b border-border text-foreground">{"汇总"}</td>
-                <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{summary.weeklyNew.toLocaleString()}</td>
-                <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{summary.weeklyBound.toLocaleString()}</td>
-                <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{summary.weeklyUnbound.toLocaleString()}</td>
-                <td className="text-right px-3 py-2 border-b border-border tabular-nums text-primary">{summary.weeklyBindRate}%</td>
-              </tr>
               {sortedBranches.map((row, i) => {
                 const isHighlighted = selectedInstitution !== "all" && row.branchId === selectedInstitution
                 const rateColor = row.weeklyBindRate >= 25 ? "text-bank-green" : row.weeklyBindRate < 10 ? "text-primary" : "text-foreground"

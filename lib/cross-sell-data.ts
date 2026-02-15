@@ -184,14 +184,19 @@ export interface CrossSellTrendPoint {
 }
 
 const trendMonths = ["9月", "10月", "11月", "12月", "1月", "2月"]
-const trendWeeksLabels = Array.from({ length: 20 }, (_, i) => `W${i + 1}`)
+// Week labels using start date (from activity start 9/5 onward, each week = 7 days)
+const trendWeekStartDates = [
+  "9/5", "9/12", "9/19", "9/26", "10/3", "10/10", "10/17", "10/24",
+  "10/31", "11/7", "11/14", "11/21", "11/28", "12/5", "12/12", "12/19",
+  "12/26", "1/2", "1/9", "1/16",
+]
 
 export function generateActivityTrend(
   institutionId: string,
   mode: "month" | "week"
 ): CrossSellTrendPoint[] {
   const isSummary = institutionId === "all"
-  const periods = mode === "month" ? trendMonths : trendWeeksLabels.slice(0, 12)
+  const periods = mode === "month" ? trendMonths : trendWeekStartDates.slice(0, 12)
 
   let cumNew = 0
   let cumBound = 0
@@ -273,7 +278,7 @@ export function generateWeeklyTrend(
     prevNew = weeklyNew
 
     return {
-      period: `W${wi + 1}`,
+      period: `${parseInt(week.start.split("/")[0])}/${parseInt(week.start.split("/")[1])}`,
       weeklyNew,
       weeklyBound,
       weeklyBindRate: +weeklyBindRate.toFixed(2),

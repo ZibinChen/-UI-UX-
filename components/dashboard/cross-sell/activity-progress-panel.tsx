@@ -159,7 +159,11 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
     return sorted
   }, [branches, sortField, sortDir])
 
-  const dateLabel = selectedDate.replace(/\//g, ".")
+  // Format "2026/02/12" -> "2026年2月12日"
+  const dateParts = selectedDate.split("/")
+  const dateLabel = dateParts.length === 3
+    ? `${dateParts[0]}年${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日`
+    : selectedDate
 
   return (
     <div className="flex flex-col gap-6">
@@ -317,15 +321,6 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
               </tr>
             </thead>
             <tbody>
-              {/* Summary row */}
-              <tr className="bg-muted/60 font-semibold">
-                <td className="text-center px-3 py-2 border-b border-border" />
-                <td className="text-left px-3 py-2 border-b border-border text-foreground">汇总</td>
-                <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{summary.newCust.toLocaleString()}</td>
-                <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{summary.bound.toLocaleString()}</td>
-                <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{summary.unbound.toLocaleString()}</td>
-                <td className="text-right px-3 py-2 border-b border-border tabular-nums text-primary">{summary.bindRate}%</td>
-              </tr>
               {sortedBranches.map((row, i) => {
                 const isHighlighted = selectedInstitution !== "all" && row.branchId === selectedInstitution
                 // Color code bind rate: green >= 25%, red < 10%
