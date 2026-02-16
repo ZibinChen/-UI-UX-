@@ -224,15 +224,19 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
       {/* Sub-tabs */}
       <TabNavigation tabs={subTabs} activeTab={activeTab} onTabChange={handleTabChange} variant="pill" />
 
-      {/* Title card with quarter selector + compare button (matching other tabs) */}
+      {/* Title card */}
       <div className="bg-card rounded border border-border px-4 py-3" suppressHydrationWarning>
         <h2 className="text-base font-semibold text-foreground text-center" suppressHydrationWarning>
-          {`对私折效指标表（${quarterLabel}）`}
+          {"对私折效指标表"}
         </h2>
         <p className="text-xs text-muted-foreground text-center mt-1" suppressHydrationWarning>
           {"按季度结算，每季度计算一次得分"}
         </p>
-        <div className="flex items-center justify-center gap-4 mt-2">
+      </div>
+
+      {/* Controls row: right-aligned, stacked vertically */}
+      <div className="flex justify-end">
+        <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{"季度："}</span>
             <select
