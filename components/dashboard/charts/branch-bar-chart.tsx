@@ -38,6 +38,7 @@ export function BranchBarChart({
           tick={{ fontSize: 11, fill: "hsl(0, 0%, 45%)" }}
           axisLine={false}
           tickLine={false}
+          domain={["auto", "auto"]}
         />
         <Tooltip
           contentStyle={{

@@ -302,6 +302,7 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
                       tick={{ fontSize: 10, fill: "hsl(0,0%,45%)" }}
                       width={65}
                       tickFormatter={v => Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}
+                      domain={["auto", "auto"]}
                     />
                     <RTooltip content={<CompareLineTooltip />} />
                     <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: 11 }} />

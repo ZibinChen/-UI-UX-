@@ -464,6 +464,7 @@ export function DetailPanel({
                 tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
                 width={60}
                 tickFormatter={v => Number(v).toLocaleString("zh-CN")}
+                domain={["auto", "auto"]}
               />
               <RTooltip content={<CompareTooltip />} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: 11 }} />
