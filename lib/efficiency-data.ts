@@ -64,22 +64,26 @@ const FORMULA_W2 = 18     // 新增活跃
 const FORMULA_W3 = 35     // 中高端新增活跃
 const FORMULA_W4 = 8      // 跨境交易
 
-// ── National totals for sub-indicators (万户 -> actual count) ─────
+// ── National totals for sub-indicators (per year, actual count) ───
 // These produce branch values in the 10K~950K range per screenshot
-const NATIONAL_SUB = {
-  annual10k_2025:     8500000,    // ~8.5M total, branch ~70K-950K
-  newActive_2025:     2680000,    // ~2.68M total, branch ~7K-180K
-  highendActive_2025: 780000,     // ~780K total, branch ~500-50K
-  crossBorder_2025:   2400000,    // ~2.4M total, branch ~500-190K
-  annual10k_2024:     7800000,
-  newActive_2024:     2350000,
-  highendActive_2024: 650000,
-  crossBorder_2024:   2100000,
+const NATIONAL_SUB_BY_YEAR: Record<string, { annual10k: number; newActive: number; highendActive: number; crossBorder: number }> = {
+  "2024": { annual10k: 7800000, newActive: 2350000, highendActive: 650000, crossBorder: 2100000 },
+  "2025": { annual10k: 8500000, newActive: 2680000, highendActive: 780000, crossBorder: 2400000 },
+  "2026": { annual10k: 9100000, newActive: 2950000, highendActive: 870000, crossBorder: 2700000 },
+}
+
+// Helper to get current and prior year from quarter id like "2026Q1"
+function parseQuarterYear(quarterId: string): { currentYear: string; priorYear: string } {
+  const year = quarterId.substring(0, 4)
+  return { currentYear: year, priorYear: String(Number(year) - 1) }
 }
 
 // ── National deposit totals (亿元) ────────────────────────────────
-const NATIONAL_DEPOSIT_ACTUAL = 650  // ~650亿 total, branch ~0.2-80亿
-const NATIONAL_DEPOSIT_TARGET = 620  // slightly lower so most complete
+const NATIONAL_DEPOSIT_BY_YEAR: Record<string, { actual: number; target: number }> = {
+  "2024": { actual: 580, target: 560 },
+  "2025": { actual: 650, target: 620 },
+  "2026": { actual: 720, target: 680 },
+}
 
 // ── Sub-indicator meta (for display) ──────────────────────────────
 export interface SubIndicator {
@@ -118,14 +122,16 @@ function quarterFactor(quarterId: string): number {
 export interface EfficiencyRow {
   branchId: string
   branchName: string
+  currentYear: string          // e.g. "2026"
+  priorYear: string            // e.g. "2025"
   // 4 sub-indicators (raw counts)
   annual10k: number
   newActive: number
   highendActive: number
   crossBorder: number
   // formula result
-  efficiencyCust: number       // 2025: weighted sum
-  efficiencyCustBase: number   // 2024 base: weighted sum
+  efficiencyCust: number       // current year: weighted sum
+  efficiencyCustBase: number   // prior year base: weighted sum
   // growth
   growthRate: number           // % change
   growthIncrement: number      // absolute change
@@ -161,41 +167,45 @@ export function generateEfficiencyData(quarterId: string): {
   summary: EfficiencySummary
 } {
   const qf = quarterFactor(quarterId)
+  const { currentYear, priorYear } = parseQuarterYear(quarterId)
+  const curSub = NATIONAL_SUB_BY_YEAR[currentYear] ?? NATIONAL_SUB_BY_YEAR["2025"]
+  const priSub = NATIONAL_SUB_BY_YEAR[priorYear] ?? NATIONAL_SUB_BY_YEAR["2024"]
+  const curDep = NATIONAL_DEPOSIT_BY_YEAR[currentYear] ?? NATIONAL_DEPOSIT_BY_YEAR["2025"]
 
   // Shares for each sub-indicator (different seeds -> different distributions)
-  const sh_a10k_25 = computeShares("annual10k_2025")
-  const sh_na_25   = computeShares("new_active_2025")
-  const sh_ha_25   = computeShares("highend_active_2025")
-  const sh_cb_25   = computeShares("cross_border_2025")
-  const sh_a10k_24 = computeShares("annual10k_2024")
-  const sh_na_24   = computeShares("new_active_2024")
-  const sh_ha_24   = computeShares("highend_active_2024")
-  const sh_cb_24   = computeShares("cross_border_2024")
-  const sh_dep     = computeShares("deposit_actual")
-  const sh_tgt     = computeShares("deposit_target")
+  const sh_a10k_cur = computeShares(`annual10k_${currentYear}`)
+  const sh_na_cur   = computeShares(`new_active_${currentYear}`)
+  const sh_ha_cur   = computeShares(`highend_active_${currentYear}`)
+  const sh_cb_cur   = computeShares(`cross_border_${currentYear}`)
+  const sh_a10k_pri = computeShares(`annual10k_${priorYear}`)
+  const sh_na_pri   = computeShares(`new_active_${priorYear}`)
+  const sh_ha_pri   = computeShares(`highend_active_${priorYear}`)
+  const sh_cb_pri   = computeShares(`cross_border_${priorYear}`)
+  const sh_dep      = computeShares("deposit_actual")
+  const sh_tgt      = computeShares("deposit_target")
 
   const rows: EfficiencyRow[] = branchList.map((branch, idx) => {
     // Quarter jitter per branch (small variation)
     const qj = 0.97 + seeded(hashCode(`q_${quarterId}_${branch.id}`)) * 0.06
 
-    // 2025 sub-indicators (actual counts)
-    const annual10k     = Math.round(NATIONAL_SUB.annual10k_2025 * sh_a10k_25[idx] * qf * qj)
-    const newActive     = Math.round(NATIONAL_SUB.newActive_2025 * sh_na_25[idx] * qf * qj)
-    const highendActive = Math.round(NATIONAL_SUB.highendActive_2025 * sh_ha_25[idx] * qf * qj)
-    const crossBorder   = Math.round(NATIONAL_SUB.crossBorder_2025 * sh_cb_25[idx] * qf * qj)
+    // Current year sub-indicators (actual counts)
+    const annual10k     = Math.round(curSub.annual10k * sh_a10k_cur[idx] * qf * qj)
+    const newActive     = Math.round(curSub.newActive * sh_na_cur[idx] * qf * qj)
+    const highendActive = Math.round(curSub.highendActive * sh_ha_cur[idx] * qf * qj)
+    const crossBorder   = Math.round(curSub.crossBorder * sh_cb_cur[idx] * qf * qj)
 
-    // 2025 折效客户数 via formula
+    // Current year 折效客户数 via formula
     const efficiencyCust = Math.round(
       annual10k * FORMULA_W1 + newActive * FORMULA_W2 + highendActive * FORMULA_W3 + crossBorder * FORMULA_W4
     )
 
-    // 2024 sub-indicators & base
-    const a10k_24 = Math.round(NATIONAL_SUB.annual10k_2024 * sh_a10k_24[idx])
-    const na_24   = Math.round(NATIONAL_SUB.newActive_2024 * sh_na_24[idx])
-    const ha_24   = Math.round(NATIONAL_SUB.highendActive_2024 * sh_ha_24[idx])
-    const cb_24   = Math.round(NATIONAL_SUB.crossBorder_2024 * sh_cb_24[idx])
+    // Prior year sub-indicators & base
+    const a10k_pri = Math.round(priSub.annual10k * sh_a10k_pri[idx])
+    const na_pri   = Math.round(priSub.newActive * sh_na_pri[idx])
+    const ha_pri   = Math.round(priSub.highendActive * sh_ha_pri[idx])
+    const cb_pri   = Math.round(priSub.crossBorder * sh_cb_pri[idx])
     const efficiencyCustBase = Math.round(
-      a10k_24 * FORMULA_W1 + na_24 * FORMULA_W2 + ha_24 * FORMULA_W3 + cb_24 * FORMULA_W4
+      a10k_pri * FORMULA_W1 + na_pri * FORMULA_W2 + ha_pri * FORMULA_W3 + cb_pri * FORMULA_W4
     )
 
     // Growth
@@ -207,8 +217,8 @@ export function generateEfficiencyData(quarterId: string): {
     // Deposit (亿元)
     const depJitter = 0.85 + seeded(hashCode(`dep_act_${branch.id}`)) * 0.3
     const tgtJitter = 0.85 + seeded(hashCode(`dep_tgt_${branch.id}`)) * 0.3
-    const depositActual = NATIONAL_DEPOSIT_ACTUAL * sh_dep[idx] * depJitter * qf
-    const depositTarget = NATIONAL_DEPOSIT_TARGET * sh_tgt[idx] * tgtJitter
+    const depositActual = curDep.actual * sh_dep[idx] * depJitter * qf
+    const depositTarget = curDep.target * sh_tgt[idx] * tgtJitter
     const depositCompletionRate = depositTarget > 0 ? (depositActual / depositTarget) * 100 : 100
     // Deduction: shortfall mapped. From screenshot: most 0, some -0.15 to -2.00
     const depositDeduction = depositCompletionRate >= 100
@@ -218,6 +228,8 @@ export function generateEfficiencyData(quarterId: string): {
     return {
       branchId: branch.id,
       branchName: branch.name,
+      currentYear,
+      priorYear,
       annual10k,
       newActive,
       highendActive,

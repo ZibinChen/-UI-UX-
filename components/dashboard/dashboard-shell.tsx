@@ -10,6 +10,7 @@ import { KeyCustomerPanel } from "./panels/key-customer-panel"
 import { CrossSellPanel } from "./panels/cross-sell-panel"
 import { EfficiencyPanel } from "./panels/efficiency-panel"
 import { CreditRiskPanel } from "./panels/credit-risk-panel"
+import { GallopPanel } from "./panels/gallop-panel"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 const mainTabs = [
@@ -18,6 +19,7 @@ const mainTabs = [
   { id: "cross-sell", label: '交叉销售' },
   { id: "efficiency", label: '对私折效指标' },
   { id: "credit-risk", label: '信用风险管理' },
+  { id: "gallop", label: '万马奔腾指标' },
 ]
 
 const BREADCRUMB_MAP: Record<string, string[]> = {
@@ -26,6 +28,7 @@ const BREADCRUMB_MAP: Record<string, string[]> = {
   'cross-sell': ['管理驾驶舱', '交叉销售'],
   efficiency: ['管理驾驶舱', '对私折效指标'],
   'credit-risk': ['管理驾驶舱', '信用风险管理'],
+  gallop: ['管理驾驶舱', '万马奔腾指标'],
 }
 
 export function DashboardShell() {
@@ -94,6 +97,12 @@ export function DashboardShell() {
               )}
               {activeMainTab === "credit-risk" && (
                 <CreditRiskPanel
+                  selectedInstitution={selectedInstitution}
+                  selectedDate={selectedDate}
+                />
+              )}
+              {activeMainTab === "gallop" && (
+                <GallopPanel
                   selectedInstitution={selectedInstitution}
                   selectedDate={selectedDate}
                 />

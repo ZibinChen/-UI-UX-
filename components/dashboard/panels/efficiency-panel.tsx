@@ -71,33 +71,6 @@ const subTabs = [
   { id: "deposit", label: "对私商户日均存款扣分" },
 ]
 
-// ── Indicators per tab (only those visible on the page) ──────────
-const TAB_INDICATORS: Record<string, { id: string; label: string }[]> = {
-  overview: [
-    { id: "totalScore", label: "得分" },
-    { id: "systemScore", label: "比系统得分" },
-    { id: "depositDeduction", label: "对私商户日均存款扣分" },
-  ],
-  system: [
-    { id: "systemScore", label: "比系统得分" },
-    { id: "efficiencyCust", label: "对私折效客户数（2025年）" },
-    { id: "efficiencyCustBase", label: "2024年基数" },
-    { id: "annual10k", label: "信用卡年消费1万以上客户" },
-    { id: "newActive", label: "新增活跃客户" },
-    { id: "highendActive", label: "中高端新增活跃客户" },
-    { id: "crossBorder", label: "跨境交易客户" },
-    { id: "growthRate", label: "增速(%)" },
-    { id: "growthRateScore", label: "增速得分率(%)" },
-    { id: "growthIncrScore", label: "增量得分率(%)" },
-  ],
-  deposit: [
-    { id: "depositDeduction", label: "对私商户日均存款扣分" },
-    { id: "depositActual", label: "对私商户日均存款(亿元)" },
-    { id: "depositTarget", label: "目标(亿元)" },
-    { id: "depositCompletionRate", label: "目标完成率(%)" },
-  ],
-}
-
 const COMPARE_COLORS = [
   "hsl(220, 70%, 50%)", "hsl(0, 85%, 50%)", "hsl(140, 55%, 40%)",
   "hsl(35, 90%, 50%)", "hsl(280, 60%, 55%)", "hsl(180, 55%, 40%)",
@@ -141,10 +114,40 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
   )
 
   const highlightId = selectedInstitution === "all" ? null : selectedInstitution
-  const quarterLabel = availableQuarters.find(q => q.id === selectedQuarter)?.label ?? selectedQuarter
+
+  // Dynamic year labels from data
+  const currentYear = rows[0]?.currentYear ?? "2025"
+  const priorYear = rows[0]?.priorYear ?? "2024"
+
+  // Build tab indicators with dynamic years
+  const TAB_INDICATORS_DYNAMIC: Record<string, { id: string; label: string }[]> = {
+    overview: [
+      { id: "totalScore", label: "得分" },
+      { id: "systemScore", label: "比系统得分" },
+      { id: "depositDeduction", label: "对私商户日均存款扣分" },
+    ],
+    system: [
+      { id: "systemScore", label: "比系统得分" },
+      { id: "efficiencyCust", label: `对私折效客户数（${currentYear}年）` },
+      { id: "efficiencyCustBase", label: `${priorYear}年基数` },
+      { id: "annual10k", label: "信用卡年消费1万以上客户" },
+      { id: "newActive", label: "新增活跃客户" },
+      { id: "highendActive", label: "中高端新增活跃客户" },
+      { id: "crossBorder", label: "跨境交易客户" },
+      { id: "growthRate", label: "增速(%)" },
+      { id: "growthRateScore", label: "增速得分率(%)" },
+      { id: "growthIncrScore", label: "增量得分率(%)" },
+    ],
+    deposit: [
+      { id: "depositDeduction", label: "对私商户日均存款扣分" },
+      { id: "depositActual", label: `${currentYear}年对私商户日均存款(亿元)` },
+      { id: "depositTarget", label: `${currentYear}年目标(亿元)` },
+      { id: "depositCompletionRate", label: "目标完成率(%)" },
+    ],
+  }
 
   // Available indicators for current tab
-  const currentTabIndicators = TAB_INDICATORS[activeTab] ?? TAB_INDICATORS.overview
+  const currentTabIndicators = TAB_INDICATORS_DYNAMIC[activeTab] ?? TAB_INDICATORS_DYNAMIC.overview
 
   // Open dialog: force-include selected institution, reset indicator selection to current tab
   const openCompareDialog = useCallback(() => {
@@ -198,7 +201,7 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
       // Generate data for each quarter
       const quarterData = availableQuarters.map(q => {
         const { rows: qRows } = generateEfficiencyData(q.id)
-        const entry: Record<string, any> = { quarter: q.label.replace("年", "").replace("季度", "Q") }
+        const entry: Record<string, any> = { quarter: q.label }
         confirmedBranches.forEach(bId => {
           const row = qRows.find(r => r.branchId === bId)
           const br = efficiencyBranchList.find(b => b.id === bId)
@@ -264,10 +267,10 @@ export function EfficiencyPanel({ selectedInstitution }: EfficiencyPanelProps) {
         <OverviewTable rows={rows} highlightId={highlightId} />
       )}
       {activeTab === "system" && (
-        <SystemScoreTable rows={rows} highlightId={highlightId} />
+        <SystemScoreTable rows={rows} highlightId={highlightId} currentYear={currentYear} priorYear={priorYear} />
       )}
       {activeTab === "deposit" && (
-        <DepositDeductionTable rows={rows} highlightId={highlightId} />
+        <DepositDeductionTable rows={rows} highlightId={highlightId} currentYear={currentYear} />
       )}
 
       {/* Trend comparison charts (below table) */}
@@ -518,7 +521,7 @@ function OverviewTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlight
 /* ================================================================
    Tab 2: 比系统得分明细
    ================================================================ */
-function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlightId: string | null }) {
+function SystemScoreTable({ rows, highlightId, currentYear, priorYear }: { rows: EfficiencyRow[]; highlightId: string | null; currentYear: string; priorYear: string }) {
   const { toggle, SortIcon, sort } = useSortable()
   const sorted = sort(rows)
 
@@ -536,7 +539,7 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
                 {"加权公式"}
               </th>
               <th className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border text-center text-foreground">
-                {"2024年基数"}
+                {`${priorYear}年基数`}
               </th>
               <th colSpan={2} className="px-2 py-1.5 text-xs font-semibold border-b border-r border-border text-center text-foreground">
                 {"增速"}
@@ -566,10 +569,10 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
                 {"跨境交易客户"}<SortIcon col="crossBorder" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("efficiencyCust")}>
-                {"对私折效客户数"}<br />{"（2025年）"}<SortIcon col="efficiencyCust" />
+                {"对私折效客户数"}<br />{`（${currentYear}年）`}<SortIcon col="efficiencyCust" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("efficiencyCustBase")}>
-                {"2024年基数"}<SortIcon col="efficiencyCustBase" />
+                {`${priorYear}年基数`}<SortIcon col="efficiencyCustBase" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("growthRate")}>
                 {"增速"}<SortIcon col="growthRate" />
@@ -630,8 +633,8 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
               </span>
             ))}
           </li>
-          <li>{"增速 = (2025年折效客户数 - 2024年基数) / 2024年基数"}</li>
-          <li>{"增量 = 2025年折效客户数 - 2024年基数"}</li>
+          <li>{`增速 = (${currentYear}年折效客户数 - ${priorYear}年基数) / ${priorYear}年基数`}</li>
+          <li>{`增量 = ${currentYear}年折效客户数 - ${priorYear}年基数`}</li>
           <li>{"增速/增量得分率：基于各分行与全行平均值的标准差归一化，映射到 [30%, 130%]"}</li>
           <li>{"比系统得分 = (增速得分率 × 70% + 增量得分率 × 30%) × 100 / 10"}</li>
         </ul>
@@ -643,7 +646,7 @@ function SystemScoreTable({ rows, highlightId }: { rows: EfficiencyRow[]; highli
 /* ================================================================
    Tab 3: 对私商户日均存款扣分
    ================================================================ */
-function DepositDeductionTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlightId: string | null }) {
+function DepositDeductionTable({ rows, highlightId, currentYear }: { rows: EfficiencyRow[]; highlightId: string | null; currentYear: string }) {
   const { toggle, SortIcon, sort } = useSortable()
   const sorted = sort(rows)
 
@@ -658,10 +661,10 @@ function DepositDeductionTable({ rows, highlightId }: { rows: EfficiencyRow[]; h
               </th>
               <th className={`${thBase} text-left min-w-[100px]`}>{"机构"}</th>
               <th className={`${thBase} text-right`} onClick={() => toggle("depositActual")}>
-                {"2025年对私商户"}<br />{"日均存款（亿元）"}<SortIcon col="depositActual" />
+                {`${currentYear}年对私商户`}<br />{"日均存款（亿元）"}<SortIcon col="depositActual" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("depositTarget")}>
-                {"2025年对私商户"}<br />{"日均存款目标（亿元）"}<SortIcon col="depositTarget" />
+                {`${currentYear}年对私商户`}<br />{"日均存款目标（亿元）"}<SortIcon col="depositTarget" />
               </th>
               <th className={`${thBase} text-right`} onClick={() => toggle("depositCompletionRate")}>
                 {"目标完成率"}<SortIcon col="depositCompletionRate" />
@@ -698,7 +701,7 @@ function DepositDeductionTable({ rows, highlightId }: { rows: EfficiencyRow[]; h
       <div className="bg-card rounded border border-border px-4 py-3">
         <h3 className="text-sm font-semibold text-foreground mb-2">{"扣分规则"}</h3>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-          <li>{"目标完成率 = 2025年对私商户日均存款 / 目标"}</li>
+          <li>{`目标完成率 = ${currentYear}年对私商户日均存款 / 目标`}</li>
           <li>{"目标完成率 ≥ 100%：不扣分"}</li>
           <li>{"目标完成率 < 100%：扣分 = (1 - 完成率) × 10，最高扣10分"}</li>
         </ul>
