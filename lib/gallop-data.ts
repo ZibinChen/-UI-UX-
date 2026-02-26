@@ -407,68 +407,100 @@ export function generateGallopSummaryIndicators(dateStr: string): GallopIndicato
   const zjCompare = fmtR(totalZJ, totalZJPrior)
   const effCompare = fmtR(totalEff, effBase)
 
+  // Child row priors for YoY (use national totals scaled by dateFactor)
+  const totalA10kPrior = Math.round(N.annual10k_prior * df)
+  const totalNAPrior = Math.round(N.newActive_prior * df)
+  const totalHAPrior = Math.round(N.highendActive_prior * df)
+  const totalCBPrior = Math.round(N.crossBorder_sub_prior * df)
+  const totalNormalPrior = conRows.reduce((s, r) => s + r.normalPrior, 0)
+  const totalInstallPrior = conRows.reduce((s, r) => s + r.installmentPrior, 0)
+  const totalOverseasPrior = +(N.overseasConsume_prior * df).toFixed(2)
+  const totalCashPrior = +(N.cashWithdraw_prior * df).toFixed(2)
+
+  const a10kCompare = fmtR(totalA10k, totalA10kPrior || totalA10k * 0.92)
+  const naCompare = fmtR(totalNA, totalNAPrior || totalNA * 0.88)
+  const haCompare = fmtR(totalHA, totalHAPrior || totalHA * 0.85)
+  const cbCompare = fmtR(totalCB, totalCBPrior || totalCB * 0.87)
+  const normalCompare = fmtR(totalNormal, totalNormalPrior || totalNormal * 0.9)
+  const installCompare = fmtR(totalInstall, totalInstallPrior || totalInstall * 0.89)
+  const overseasCompare = fmtR(totalOverseas, totalOverseasPrior || totalOverseas * 0.88)
+  const cashCompare = fmtR(totalCash, totalCashPrior || totalCash * 0.91)
+
   return [
-    { id: "g_eff", name: "信用卡折效客户数", indent: 0, value: fmtV(totalEff, ""), rawValue: totalEff, unit: "", comparisonType: "同比", ...effCompare },
-    { id: "g_eff_a10k", name: "信用卡年消费1万以上客户", indent: 1, value: totalA10k.toLocaleString(), rawValue: totalA10k, unit: "", comparisonType: "同比", comparison: "", comparisonRaw: 0 },
-    { id: "g_eff_na", name: "新增活跃客户", indent: 1, value: totalNA.toLocaleString(), rawValue: totalNA, unit: "", comparisonType: "同比", comparison: "", comparisonRaw: 0 },
-    { id: "g_eff_ha", name: "中高端新增活跃客户", indent: 1, value: totalHA.toLocaleString(), rawValue: totalHA, unit: "", comparisonType: "同比", comparison: "", comparisonRaw: 0 },
-    { id: "g_eff_cb", name: "跨境交易客户", indent: 1, value: totalCB.toLocaleString(), rawValue: totalCB, unit: "", comparisonType: "同比", comparison: "", comparisonRaw: 0 },
+    { id: "effCust", name: "信用卡折效客户数", indent: 0, value: fmtV(totalEff, ""), rawValue: totalEff, unit: "", comparisonType: "同比", ...effCompare },
+    { id: "annual10k", name: "信用卡年消费1万以上客户", indent: 1, value: totalA10k.toLocaleString(), rawValue: totalA10k, unit: "", comparisonType: "同比", ...a10kCompare },
+    { id: "newActive", name: "新增活跃客户", indent: 1, value: totalNA.toLocaleString(), rawValue: totalNA, unit: "", comparisonType: "同比", ...naCompare },
+    { id: "highendActive", name: "中高端新增活跃客户", indent: 1, value: totalHA.toLocaleString(), rawValue: totalHA, unit: "", comparisonType: "同比", ...haCompare },
+    { id: "crossBorderSub", name: "跨境交易客户", indent: 1, value: totalCB.toLocaleString(), rawValue: totalCB, unit: "", comparisonType: "同比", ...cbCompare },
 
-    { id: "g_consume", name: "信用卡消费（满分30分）", indent: 0, value: fmtV(totalConsume, "亿元"), rawValue: totalConsume, unit: "亿元", comparisonType: "同比", ...consumeCompare },
-    { id: "g_consume_normal", name: "普通消费", indent: 1, value: fmtV(totalNormal, "亿元"), rawValue: totalNormal, unit: "亿元", comparisonType: "同比", comparison: "", comparisonRaw: 0 },
-    { id: "g_consume_install", name: "客户分期消费额", indent: 1, value: fmtV(totalInstall, "亿元"), rawValue: totalInstall, unit: "亿元", comparisonType: "同比", comparison: "", comparisonRaw: 0 },
+    { id: "totalConsume", name: "信用卡消费（满分30分）", indent: 0, value: fmtV(totalConsume, "亿元"), rawValue: totalConsume, unit: "亿元", comparisonType: "同比", ...consumeCompare },
+    { id: "normalConsume", name: "普通消费", indent: 1, value: fmtV(totalNormal, "亿元"), rawValue: totalNormal, unit: "亿元", comparisonType: "同比", ...normalCompare },
+    { id: "installmentConsume", name: "客户分期消费额", indent: 1, value: fmtV(totalInstall, "亿元"), rawValue: totalInstall, unit: "亿元", comparisonType: "同比", ...installCompare },
 
-    { id: "g_cross", name: "信用卡跨境交易（满分15分）", indent: 0, value: fmtV(totalCross, "亿元"), rawValue: totalCross, unit: "亿元", comparisonType: "同比", ...crossCompare },
-    { id: "g_cross_overseas", name: "境外消费", indent: 1, value: fmtV(totalOverseas, "亿元"), rawValue: totalOverseas, unit: "亿元", comparisonType: "同比", comparison: "", comparisonRaw: 0 },
-    { id: "g_cross_cash", name: "取现交易额", indent: 1, value: fmtV(totalCash, "亿元"), rawValue: totalCash, unit: "亿元", comparisonType: "同比", comparison: "", comparisonRaw: 0 },
+    { id: "totalCross", name: "信用卡跨境交易（满分15分）", indent: 0, value: fmtV(totalCross, "亿元"), rawValue: totalCross, unit: "亿元", comparisonType: "同比", ...crossCompare },
+    { id: "overseasConsume", name: "境外消费", indent: 1, value: fmtV(totalOverseas, "亿元"), rawValue: totalOverseas, unit: "亿元", comparisonType: "同比", ...overseasCompare },
+    { id: "cashWithdraw", name: "取现交易额", indent: 1, value: fmtV(totalCash, "亿元"), rawValue: totalCash, unit: "亿元", comparisonType: "同比", ...cashCompare },
 
-    { id: "g_zhuojun", name: "卓隽信用卡发卡（满分10分）", indent: 0, value: fmtV(totalZJ, "万张"), rawValue: totalZJ, unit: "万张", comparisonType: "同比", ...zjCompare },
+    { id: "newCards", name: "卓隽信用卡发卡（满分10分）", indent: 0, value: fmtV(totalZJ, "万张"), rawValue: totalZJ, unit: "万张", comparisonType: "同比", ...zjCompare },
   ]
 }
 
 // ── Monthly trend data for charts ─────────────────────────────────
 const MONTHS = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"]
 
+// Sub-indicator national bases for trend generation
+const SUB_NATIONAL_BASE: Record<string, { current: number; prior: number }> = {
+  // efficiency sub
+  effCust: { current: N.annual10k * FW1 + N.newActive * FW2 + N.highendActive * FW3 + N.crossBorder_sub * FW4, prior: N.annual10k_prior * FW1 + N.newActive_prior * FW2 + N.highendActive_prior * FW3 + N.crossBorder_sub_prior * FW4 },
+  annual10k: { current: N.annual10k, prior: N.annual10k_prior },
+  newActive: { current: N.newActive, prior: N.newActive_prior },
+  highendActive: { current: N.highendActive, prior: N.highendActive_prior },
+  crossBorderSub: { current: N.crossBorder_sub, prior: N.crossBorder_sub_prior },
+  // consume sub
+  totalConsume: { current: N.normalConsume + N.installmentConsume, prior: N.normalConsume_prior + N.installmentConsume_prior },
+  normalConsume: { current: N.normalConsume, prior: N.normalConsume_prior },
+  installmentConsume: { current: N.installmentConsume, prior: N.installmentConsume_prior },
+  // crossBorder sub
+  totalCross: { current: N.overseasConsume + N.cashWithdraw, prior: N.overseasConsume_prior + N.cashWithdraw_prior },
+  overseasConsume: { current: N.overseasConsume, prior: N.overseasConsume_prior },
+  cashWithdraw: { current: N.cashWithdraw, prior: N.cashWithdraw_prior },
+  // zhuojun
+  newCards: { current: N.zhuojunCards, prior: N.zhuojunCards_prior },
+}
+
 export function generateGallopTrend(
   indicatorKey: "consume" | "crossBorder" | "zhuojun" | "efficiency",
   institutionId: string,
-  dateStr: string
+  dateStr: string,
+  activeKpi?: string
 ): GallopTrendPoint[] {
   const parts = dateStr.split("/")
   const maxMonth = parts.length === 3 ? parseInt(parts[1]) : 12
   const months = MONTHS.slice(0, maxMonth)
 
-  const nationalBase: Record<string, number> = {
-    consume: N.normalConsume + N.installmentConsume,
-    crossBorder: N.overseasConsume + N.cashWithdraw,
-    zhuojun: N.zhuojunCards,
-    efficiency: N.annual10k * FW1 + N.newActive * FW2 + N.highendActive * FW3 + N.crossBorder_sub * FW4,
-  }
-  const priorBase: Record<string, number> = {
-    consume: N.normalConsume_prior + N.installmentConsume_prior,
-    crossBorder: N.overseasConsume_prior + N.cashWithdraw_prior,
-    zhuojun: N.zhuojunCards_prior,
-    efficiency: N.annual10k_prior * FW1 + N.newActive_prior * FW2 + N.highendActive_prior * FW3 + N.crossBorder_sub_prior * FW4,
-  }
+  // Resolve the actual sub-indicator to use
+  const kpiKey = activeKpi || indicatorKey
+  const subBase = SUB_NATIONAL_BASE[kpiKey]
+  const nationalVal = subBase ? subBase.current : (SUB_NATIONAL_BASE[indicatorKey]?.current ?? 1)
+  const priorVal = subBase ? subBase.prior : (SUB_NATIONAL_BASE[indicatorKey]?.prior ?? 1)
 
   const isAll = institutionId === "all"
-  const shares = computeShares(`gtrend_${indicatorKey}`)
+  const shares = computeShares(`gtrend_${kpiKey}`)
   const idx = branchList.findIndex(b => b.id === institutionId)
 
   let prevCum = 0
   return months.map((month, mi) => {
     const mFrac = (mi + 1) / 12
-    const seasonal = 0.85 + seeded(hashCode(`gseason_${indicatorKey}_${mi}`)) * 0.3
-    let curCum = nationalBase[indicatorKey] * mFrac * seasonal
-    const priCum = priorBase[indicatorKey] * mFrac * seasonal * 0.95
+    const seasonal = 0.85 + seeded(hashCode(`gseason_${kpiKey}_${mi}`)) * 0.3
+    let curCum = nationalVal * mFrac * seasonal
+    const priCum = priorVal * mFrac * seasonal * 0.95
 
     if (!isAll && idx >= 0) {
-      const brJitter = 0.92 + seeded(hashCode(`gtrend_br_${indicatorKey}_${mi}_${institutionId}`)) * 0.16
+      const brJitter = 0.92 + seeded(hashCode(`gtrend_br_${kpiKey}_${mi}_${institutionId}`)) * 0.16
       curCum = curCum * shares[idx] * brJitter
     }
 
     const yoyPct = priCum > 0 ? ((curCum - priCum) / priCum) * 100 : null
-    const momPct = prevCum > 0 ? ((curCum - prevCum) / prevCum) * 100 : null
     prevCum = curCum
 
     return {

@@ -19,7 +19,7 @@ import {
   type GallopIndicatorRow,
 } from "@/lib/gallop-data"
 import {
-  ArrowUp, ArrowDown, ArrowUpDown, ChevronUp, ChevronDown, GitCompareArrows, Info,
+  ArrowUp, ArrowDown, ArrowUpDown, ChevronUp, ChevronDown, GitCompareArrows, Info, Minus,
 } from "lucide-react"
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -52,6 +52,7 @@ const COMPARE_COLORS = [
   "hsl(35, 90%, 50%)", "hsl(280, 60%, 55%)", "hsl(180, 55%, 40%)",
 ]
 
+// ── Tooltip components ───────────────────────────────────────────
 function LineTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   const p = payload[0]
@@ -110,6 +111,53 @@ function formatTitleDate(dateStr: string): string {
   return `${parts[0]}年${Number(parts[1])}月${Number(parts[2])}日`
 }
 
+function ValueArrow({ raw }: { raw: number }) {
+  if (Math.abs(raw) < 0.001) return <Minus className="h-3 w-3 text-muted-foreground shrink-0" />
+  if (raw < 0) return <ArrowDown className="h-3 w-3 text-bank-green shrink-0" />
+  return <ArrowUp className="h-3 w-3 text-primary shrink-0" />
+}
+
+function colorClass(raw: number): string {
+  if (Math.abs(raw) < 0.001) return "text-muted-foreground"
+  return raw < 0 ? "text-bank-green" : "text-primary"
+}
+
+// ── KPI sidebar card (like detail-panel) ─────────────────────────
+function KpiSideCard({ row, isActive, depth, onClick }: {
+  row: GallopIndicatorRow; isActive: boolean; depth: number; onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full text-left px-3 py-2 transition-colors border-l-2",
+        isActive
+          ? "bg-primary/10 border-l-primary"
+          : "border-l-transparent hover:bg-muted/50"
+      )}
+      style={{ paddingLeft: `${8 + depth * 12}px` }}
+    >
+      <p className={cn("text-[11px] leading-tight truncate",
+        depth === 0 ? "font-semibold text-foreground" : "text-muted-foreground"
+      )}>
+        {row.name}
+      </p>
+      <p className={cn("tabular-nums mt-0.5",
+        isActive ? "text-primary" : "text-foreground",
+        depth === 0 ? "text-sm font-bold" : "text-xs font-semibold"
+      )}>
+        {row.value}
+        <span className="text-[10px] text-muted-foreground ml-1">{row.unit}</span>
+      </p>
+      {row.comparison && (
+        <p className={cn("text-[10px] tabular-nums mt-0.5", colorClass(row.comparisonRaw))}>
+          {row.comparisonType}{row.comparison}
+        </p>
+      )}
+    </button>
+  )
+}
+
 // ── Main Panel ───────────────────────────────────────────────────
 export function GallopPanel({ selectedInstitution, selectedDate }: GallopPanelProps) {
   const [activeTab, setActiveTab] = useState("all")
@@ -129,76 +177,92 @@ export function GallopPanel({ selectedInstitution, selectedDate }: GallopPanelPr
       </div>
 
       {activeTab === "all" && (
-        <AllIndicatorsTab selectedDate={selectedDate} />
+        <AllIndicatorsTab selectedDate={selectedDate} selectedInstitution={selectedInstitution} />
       )}
       {activeTab === "efficiency" && (
-        <DetailSubTab
-          tabKey="efficiency"
-          selectedInstitution={selectedInstitution}
-          selectedDate={selectedDate}
-        />
+        <DetailSubTab tabKey="efficiency" selectedInstitution={selectedInstitution} selectedDate={selectedDate} />
       )}
       {activeTab === "consume" && (
-        <DetailSubTab
-          tabKey="consume"
-          selectedInstitution={selectedInstitution}
-          selectedDate={selectedDate}
-        />
+        <DetailSubTab tabKey="consume" selectedInstitution={selectedInstitution} selectedDate={selectedDate} />
       )}
       {activeTab === "crossBorder" && (
-        <DetailSubTab
-          tabKey="crossBorder"
-          selectedInstitution={selectedInstitution}
-          selectedDate={selectedDate}
-        />
+        <DetailSubTab tabKey="crossBorder" selectedInstitution={selectedInstitution} selectedDate={selectedDate} />
       )}
       {activeTab === "zhuojun" && (
-        <DetailSubTab
-          tabKey="zhuojun"
-          selectedInstitution={selectedInstitution}
-          selectedDate={selectedDate}
-        />
+        <DetailSubTab tabKey="zhuojun" selectedInstitution={selectedInstitution} selectedDate={selectedDate} />
       )}
     </div>
   )
 }
 
 /* ================================================================
-   Tab 1: 全部指标 — Summary table with definitions
+   Tab 1: 全部指标 — left-aligned table matching 综合经营计划 style
    ================================================================ */
-function AllIndicatorsTab({ selectedDate }: { selectedDate: string }) {
+function AllIndicatorsTab({ selectedDate, selectedInstitution }: { selectedDate: string; selectedInstitution: string }) {
+  const isSummary = selectedInstitution === "all"
   const indicators = useMemo(() => generateGallopSummaryIndicators(selectedDate), [selectedDate])
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Summary table */}
-      <div className="bg-card rounded border border-border overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-muted/50">
-              <th className={`${thBase} text-left min-w-[200px]`}>{"指标名称"}</th>
-              <th className={`${thBase} text-right min-w-[150px]`}>{"当前值"}</th>
-              <th className={`${thBase} text-right min-w-[100px] border-r-0`}>{"同比变化"}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {indicators.map(row => {
-              const isParent = row.indent === 0
-              const isPositive = row.comparisonRaw >= 0
-              return (
-                <tr key={row.id} className={isParent ? "bg-muted/20 font-semibold" : "hover:bg-muted/30"}>
-                  <td className={`${tdBase} text-left ${isParent ? "text-foreground font-semibold" : "text-muted-foreground"}`} style={{ paddingLeft: `${12 + row.indent * 20}px` }}>
-                    {row.name}
-                  </td>
-                  <td className={`${tdBase} ${isParent ? "text-foreground font-semibold" : ""}`}>{row.value}</td>
-                  <td className={`${tdBase} border-r-0 ${row.comparison ? (isPositive ? "text-primary" : "text-bank-green") : ""}`}>
-                    {row.comparison || "-"}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+      <div className="bg-card rounded border border-border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-muted">
+                <th className="text-left px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap min-w-[200px]">
+                  {"业务指标"}
+                </th>
+                <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap min-w-[150px]">
+                  {"业务量"}
+                </th>
+                <th className="text-right px-3 py-2.5 font-semibold text-foreground border-b border-border whitespace-nowrap min-w-[140px]">
+                  {"同比变化"}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {indicators.map((row, index) => {
+                const isEvenRow = index % 2 === 0
+                return (
+                  <tr
+                    key={row.id}
+                    className={cn(
+                      "transition-colors hover:bg-muted/50",
+                      isEvenRow ? "bg-card" : "bg-muted/30"
+                    )}
+                  >
+                    <td
+                      className={cn(
+                        "px-3 py-2 border-b border-border text-foreground whitespace-nowrap",
+                        row.indent === 0 ? "font-semibold" : "font-normal"
+                      )}
+                      style={{ paddingLeft: `${row.indent * 20 + 12}px` }}
+                    >
+                      {row.name}
+                    </td>
+                    <td className="px-3 py-2 border-b border-border text-right whitespace-nowrap">
+                      <span className="tabular-nums text-foreground font-medium">{row.value}</span>
+                      <span className="text-xs text-muted-foreground ml-1">{row.unit}</span>
+                    </td>
+                    <td className="px-3 py-2 border-b border-border text-right whitespace-nowrap">
+                      {row.comparison ? (
+                        <div className="inline-flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">{row.comparisonType}</span>
+                          <span className={cn("tabular-nums font-semibold text-sm", colorClass(row.comparisonRaw))}>
+                            {row.comparison}
+                          </span>
+                          <ValueArrow raw={row.comparisonRaw} />
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">{"-"}</span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Definitions */}
@@ -221,15 +285,41 @@ function AllIndicatorsTab({ selectedDate }: { selectedDate: string }) {
 }
 
 /* ================================================================
-   Tab 2-5: Detail sub-tab — trend chart + YoY bar + branch table + comparison
+   Tab 2-5: Detail sub-tab with KPI sidebar + trend charts + table
    ================================================================ */
 type TabKey = "efficiency" | "consume" | "crossBorder" | "zhuojun"
+
+// KPI definitions per tab — these drive the sidebar
+const KPI_DEFS: Record<TabKey, { id: string; label: string; parentId?: string }[]> = {
+  efficiency: [
+    { id: "effCust", label: "信用卡折效客户数" },
+    { id: "annual10k", label: "信用卡年消费1万以上客户", parentId: "effCust" },
+    { id: "newActive", label: "新增活跃客户", parentId: "effCust" },
+    { id: "highendActive", label: "中高端新增活跃客户", parentId: "effCust" },
+    { id: "crossBorderSub", label: "跨境交易客户", parentId: "effCust" },
+  ],
+  consume: [
+    { id: "totalConsume", label: "信用卡消费总额" },
+    { id: "normalConsume", label: "普通消费", parentId: "totalConsume" },
+    { id: "installmentConsume", label: "客户分期消费额", parentId: "totalConsume" },
+  ],
+  crossBorder: [
+    { id: "totalCross", label: "信用卡跨境交易总额" },
+    { id: "overseasConsume", label: "境外消费", parentId: "totalCross" },
+    { id: "cashWithdraw", label: "取现交易额", parentId: "totalCross" },
+  ],
+  zhuojun: [
+    { id: "newCards", label: "卓隽信用卡新发活动卡量" },
+  ],
+}
 
 function DetailSubTab({
   tabKey, selectedInstitution, selectedDate,
 }: {
   tabKey: TabKey; selectedInstitution: string; selectedDate: string
 }) {
+  const kpiDefs = KPI_DEFS[tabKey]
+  const [activeKpi, setActiveKpi] = useState(kpiDefs[0].id)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogStep, setDialogStep] = useState<"branch" | "indicator">("branch")
   const [selectedBranches, setSelectedBranches] = useState<string[]>([])
@@ -240,11 +330,25 @@ function DetailSubTab({
   const def = GALLOP_INDICATOR_DEFS[tabKey]
   const highlightId = selectedInstitution === "all" ? null : selectedInstitution
 
-  // Trend data
-  const trendData = useMemo(
-    () => generateGallopTrend(tabKey, selectedInstitution, selectedDate),
-    [tabKey, selectedInstitution, selectedDate]
+  // Generate summary indicators for KPI sidebar
+  const summaryIndicators = useMemo(
+    () => generateGallopSummaryIndicators(selectedDate),
+    [selectedDate]
   )
+
+  // Map KPI IDs -> indicator rows for sidebar display
+  const kpiRowMap = useMemo(() => {
+    const map = new Map<string, GallopIndicatorRow>()
+    summaryIndicators.forEach(r => map.set(r.id, r))
+    return map
+  }, [summaryIndicators])
+
+  // Trend data based on activeKpi
+  const trendData = useMemo(
+    () => generateGallopTrend(tabKey, selectedInstitution, selectedDate, activeKpi),
+    [tabKey, selectedInstitution, selectedDate, activeKpi]
+  )
+  const activeRow = kpiRowMap.get(activeKpi)
 
   // Available comparison indicators per tab
   const tabIndicators = useMemo(() => {
@@ -310,10 +414,8 @@ function DetailSubTab({
   // Build comparison trend data
   const comparisonChartData = useMemo(() => {
     if (confirmedBranches.length === 0 || confirmedIndicators.length === 0) return []
-
     return confirmedIndicators.map(indId => {
       const indDef = tabIndicators.find(i => i.id === indId)
-      // Generate data for each branch
       const allBranchRows: Record<string, any[]> = {}
       confirmedBranches.forEach(bId => {
         switch (tabKey) {
@@ -323,76 +425,93 @@ function DetailSubTab({
           case "zhuojun": allBranchRows[bId] = generateGallopZhuojun(selectedDate); break
         }
       })
-      // Single data point per branch (YTD)
-      const branchNames = confirmedBranches.map(bId => gallopBranchList.find(b => b.id === bId)?.name ?? bId)
-      const chartDataPoints = confirmedBranches.map((bId, idx) => {
+      const chartDataPoints = confirmedBranches.map(bId => {
+        const bName = gallopBranchList.find(b => b.id === bId)?.name ?? bId
         const rows = allBranchRows[bId] ?? []
         const row = rows.find((r: any) => r.branchId === bId)
-        return {
-          name: branchNames[idx],
-          value: row ? (row as any)[indId] ?? 0 : 0,
-        }
+        return { name: bName, value: row ? (row as any)[indId] ?? 0 : 0 }
       })
-      return {
-        indicatorId: indId,
-        label: indDef?.label ?? indId,
-        data: chartDataPoints,
-        branchNames,
-      }
+      return { indicatorId: indId, label: indDef?.label ?? indId, data: chartDataPoints }
     })
   }, [confirmedBranches, confirmedIndicators, tabKey, selectedDate, tabIndicators])
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Top area: trend chart + YoY bar */}
-      <div className="bg-card rounded border border-border overflow-hidden p-4 flex flex-col gap-4">
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <h4 className="text-sm font-semibold text-foreground">
-              {def.name}{"月趋势"}
-            </h4>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-0.5 bg-[hsl(220,70%,45%)] inline-block rounded" />
-                {"累计值"}
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-2.5 bg-[hsl(0,85%,46%)] inline-block rounded-sm" />
-                {"同比增长"}
-              </span>
+      {/* Top area: KPI sidebar + dual trend charts */}
+      <div className="bg-card rounded border border-border overflow-hidden">
+        <div className="flex">
+          {/* KPI sidebar */}
+          <div className="w-[200px] shrink-0 border-r border-border py-2 flex flex-col gap-0.5 overflow-y-auto max-h-[520px]">
+            {kpiDefs.map(kd => {
+              const row = kpiRowMap.get(kd.id)
+              if (!row) return null
+              const depth = kd.parentId ? 1 : 0
+              return (
+                <KpiSideCard
+                  key={kd.id}
+                  row={row}
+                  isActive={activeKpi === kd.id}
+                  depth={depth}
+                  onClick={() => setActiveKpi(kd.id)}
+                />
+              )
+            })}
+          </div>
+
+          {/* Right: two charts stacked */}
+          <div className="flex-1 p-4 flex flex-col gap-4 min-w-0">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="text-sm font-semibold text-foreground">
+                  {activeRow?.name ?? ""}{"月趋势"}
+                </h4>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-0.5 bg-[hsl(220,70%,45%)] inline-block rounded" />
+                    {"累计值"}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-2.5 bg-[hsl(0,85%,46%)] inline-block rounded-sm" />
+                    {"同比增长"}
+                  </span>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                {"单位: "}{activeRow?.unit ?? ""}
+              </p>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} width={60}
+                    tickFormatter={v => Number(v).toLocaleString("zh-CN")} domain={["auto", "auto"]} />
+                  <RTooltip content={<LineTooltip />} />
+                  <Line type="monotone" dataKey="value" name={activeRow?.name ?? ""}
+                    stroke="hsl(220, 70%, 45%)" strokeWidth={2}
+                    dot={{ r: 3, fill: "hsl(220, 70%, 45%)" }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-2">{"同比增长 (%)"}</p>
+              <ResponsiveContainer width="100%" height={150}>
+                <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} width={50}
+                    tickFormatter={v => `${v}%`} domain={["auto", "auto"]} />
+                  <RTooltip content={<BarTooltipComp />} />
+                  <ReferenceLine y={0} stroke="hsl(0,0%,75%)" />
+                  <Bar dataKey="yoyPct" name="同比" barSize={24} radius={[2, 2, 0, 0]}>
+                    {trendData.map((entry, idx) => (
+                      <Cell key={idx}
+                        fill={(entry.yoyPct ?? 0) >= 0 ? "hsl(0, 85%, 46%)" : "hsl(140, 60%, 40%)"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} width={60}
-                tickFormatter={v => Number(v).toLocaleString("zh-CN")} domain={["auto", "auto"]} />
-              <RTooltip content={<LineTooltip />} />
-              <Line type="monotone" dataKey="value" name={"累计值"}
-                stroke="hsl(220, 70%, 45%)" strokeWidth={2}
-                dot={{ r: 3, fill: "hsl(220, 70%, 45%)" }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        <div>
-          <p className="text-[11px] text-muted-foreground mb-2">{"同比增长 (%)"}</p>
-          <ResponsiveContainer width="100%" height={150}>
-            <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} width={50}
-                tickFormatter={v => `${v}%`} domain={["auto", "auto"]} />
-              <RTooltip content={<BarTooltipComp />} />
-              <ReferenceLine y={0} stroke="hsl(0,0%,75%)" />
-              <Bar dataKey="yoyPct" name="同比" barSize={24} radius={[2, 2, 0, 0]}>
-                {trendData.map((entry, idx) => (
-                  <Cell key={idx}
-                    fill={(entry.yoyPct ?? 0) >= 0 ? "hsl(0, 85%, 46%)" : "hsl(140, 60%, 40%)"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
         </div>
       </div>
 
@@ -556,7 +675,7 @@ function EfficiencyTable({ selectedDate, highlightId }: { selectedDate: string; 
             <th className="px-2 py-1.5 text-xs font-semibold border-b border-border text-center text-foreground">{"结果"}</th>
           </tr>
           <tr className="bg-muted/40">
-            <th className={`${thBase} text-center w-[50px]`}>{"序号"}</th>
+            <th className={`${thBase} text-center w-[60px] whitespace-nowrap`}>{"序号"}</th>
             <th className={`${thBase} text-left min-w-[80px]`}>{"机构"}</th>
             <th className={`${thBase} text-right`}>{"信用卡年消费"}<br />{"1万以上客户"}</th>
             <th className={`${thBase} text-right`}>{"新增活跃客户"}</th>
@@ -614,7 +733,7 @@ function ConsumeTable({ selectedDate, highlightId }: { selectedDate: string; hig
             <th colSpan={2} className="px-2 py-1.5 text-xs font-semibold border-b border-border text-center text-foreground">{"评分"}</th>
           </tr>
           <tr className="bg-muted/40">
-            <th className={`${thBase} text-center w-[50px]`}>{"排名"}</th>
+            <th className={`${thBase} text-center w-[60px] whitespace-nowrap`}>{"排名"}</th>
             <th className={`${thBase} text-left min-w-[80px]`}>{"机构"}</th>
             <th className={`${thBase} text-right`}>{"消费总额"}<br />{"（亿元）"}</th>
             <th className={`${thBase} text-right`}>{"普通消费"}<br />{"（亿元）"}</th>
@@ -669,7 +788,7 @@ function CrossBorderTable({ selectedDate, highlightId }: { selectedDate: string;
             <th colSpan={3} className="px-2 py-1.5 text-xs font-semibold border-b border-border text-center text-foreground">{"评分"}</th>
           </tr>
           <tr className="bg-muted/40">
-            <th className={`${thBase} text-center w-[50px]`}>{"排名"}</th>
+            <th className={`${thBase} text-center w-[60px] whitespace-nowrap`}>{"排名"}</th>
             <th className={`${thBase} text-left min-w-[80px]`}>{"机构"}</th>
             <th className={`${thBase} text-right`}>{"跨境总额"}<br />{"（亿元）"}</th>
             <th className={`${thBase} text-right`}>{"境外消费"}<br />{"（亿元）"}</th>
@@ -725,7 +844,7 @@ function ZhuojunTable({ selectedDate, highlightId }: { selectedDate: string; hig
             <th colSpan={3} className="px-2 py-1.5 text-xs font-semibold border-b border-border text-center text-foreground">{"评分"}</th>
           </tr>
           <tr className="bg-muted/40">
-            <th className={`${thBase} text-center w-[50px]`}>{"排名"}</th>
+            <th className={`${thBase} text-center w-[60px] whitespace-nowrap`}>{"排名"}</th>
             <th className={`${thBase} text-left min-w-[80px]`}>{"机构"}</th>
             <th className={`${thBase} text-right`}>{"当年新发"}<br />{"活动卡量"}</th>
             <th className={`${thBase} text-right`}>{"去年同期"}<br />{"新发卡量"}</th>
