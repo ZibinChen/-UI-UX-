@@ -199,8 +199,10 @@ export function GallopPanel({ selectedInstitution, selectedDate }: GallopPanelPr
    Tab 1: 全部指标 — left-aligned table matching 综合经营计划 style
    ================================================================ */
 function AllIndicatorsTab({ selectedDate, selectedInstitution }: { selectedDate: string; selectedInstitution: string }) {
-  const isSummary = selectedInstitution === "all"
-  const indicators = useMemo(() => generateGallopSummaryIndicators(selectedDate), [selectedDate])
+  const indicators = useMemo(
+    () => generateGallopSummaryIndicators(selectedDate, selectedInstitution),
+    [selectedDate, selectedInstitution]
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -330,10 +332,10 @@ function DetailSubTab({
   const def = GALLOP_INDICATOR_DEFS[tabKey]
   const highlightId = selectedInstitution === "all" ? null : selectedInstitution
 
-  // Generate summary indicators for KPI sidebar
+  // Generate summary indicators for KPI sidebar (filtered by selected institution)
   const summaryIndicators = useMemo(
-    () => generateGallopSummaryIndicators(selectedDate),
-    [selectedDate]
+    () => generateGallopSummaryIndicators(selectedDate, selectedInstitution),
+    [selectedDate, selectedInstitution]
   )
 
   // Map KPI IDs -> indicator rows for sidebar display

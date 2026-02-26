@@ -365,31 +365,39 @@ export function generateGallopZhuojun(dateStr: string): GallopZhuojunRow[] {
 }
 
 // ── Summary indicators for "全部指标" tab ─────────────────────────
-export function generateGallopSummaryIndicators(dateStr: string): GallopIndicatorRow[] {
+export function generateGallopSummaryIndicators(dateStr: string, institutionId?: string): GallopIndicatorRow[] {
   const df = dateFactor(dateStr)
   const effRows = generateGallopEfficiency(dateStr)
   const conRows = generateGallopConsume(dateStr)
   const crossRows = generateGallopCrossBorder(dateStr)
   const zjRows = generateGallopZhuojun(dateStr)
 
-  const totalEff = effRows.reduce((s, r) => s + r.effCust, 0)
-  const totalA10k = effRows.reduce((s, r) => s + r.annual10k, 0)
-  const totalNA = effRows.reduce((s, r) => s + r.newActive, 0)
-  const totalHA = effRows.reduce((s, r) => s + r.highendActive, 0)
-  const totalCB = effRows.reduce((s, r) => s + r.crossBorderSub, 0)
+  const isAll = !institutionId || institutionId === "all"
 
-  const totalConsume = conRows.reduce((s, r) => s + r.totalConsume, 0)
-  const totalNormal = conRows.reduce((s, r) => s + r.normalConsume, 0)
-  const totalInstall = conRows.reduce((s, r) => s + r.installmentConsume, 0)
-  const totalConsumePrior = conRows.reduce((s, r) => s + r.totalPrior, 0)
+  // Filtered rows (single branch or all)
+  const fEff = isAll ? effRows : effRows.filter(r => r.branchId === institutionId)
+  const fCon = isAll ? conRows : conRows.filter(r => r.branchId === institutionId)
+  const fCross = isAll ? crossRows : crossRows.filter(r => r.branchId === institutionId)
+  const fZJ = isAll ? zjRows : zjRows.filter(r => r.branchId === institutionId)
 
-  const totalCross = crossRows.reduce((s, r) => s + r.totalCross, 0)
-  const totalOverseas = crossRows.reduce((s, r) => s + r.overseasConsume, 0)
-  const totalCash = crossRows.reduce((s, r) => s + r.cashWithdraw, 0)
-  const totalCrossPrior = crossRows.reduce((s, r) => s + r.totalCrossPrior, 0)
+  const totalEff = fEff.reduce((s, r) => s + r.effCust, 0)
+  const totalA10k = fEff.reduce((s, r) => s + r.annual10k, 0)
+  const totalNA = fEff.reduce((s, r) => s + r.newActive, 0)
+  const totalHA = fEff.reduce((s, r) => s + r.highendActive, 0)
+  const totalCB = fEff.reduce((s, r) => s + r.crossBorderSub, 0)
 
-  const totalZJ = zjRows.reduce((s, r) => s + r.newCards, 0)
-  const totalZJPrior = zjRows.reduce((s, r) => s + r.newCardsPrior, 0)
+  const totalConsume = fCon.reduce((s, r) => s + r.totalConsume, 0)
+  const totalNormal = fCon.reduce((s, r) => s + r.normalConsume, 0)
+  const totalInstall = fCon.reduce((s, r) => s + r.installmentConsume, 0)
+  const totalConsumePrior = fCon.reduce((s, r) => s + r.totalPrior, 0)
+
+  const totalCross = fCross.reduce((s, r) => s + r.totalCross, 0)
+  const totalOverseas = fCross.reduce((s, r) => s + r.overseasConsume, 0)
+  const totalCash = fCross.reduce((s, r) => s + r.cashWithdraw, 0)
+  const totalCrossPrior = fCross.reduce((s, r) => s + r.totalCrossPrior, 0)
+
+  const totalZJ = fZJ.reduce((s, r) => s + r.newCards, 0)
+  const totalZJPrior = fZJ.reduce((s, r) => s + r.newCardsPrior, 0)
 
   function fmtV(v: number, unit: string): string {
     if (unit === "亿元") return v >= 10000 ? `${(v / 10000).toFixed(2)}万亿` : `${v.toFixed(2)}亿`
@@ -401,21 +409,24 @@ export function generateGallopSummaryIndicators(dateStr: string): GallopIndicato
     return { comparison: `${r >= 0 ? "+" : ""}${r.toFixed(2)}%`, comparisonRaw: r }
   }
 
-  const effBase = effRows.reduce((s, r) => s + r.effCustBase, 0)
+  const effBase = fEff.reduce((s, r) => s + r.effCustBase, 0)
   const consumeCompare = fmtR(totalConsume, totalConsumePrior)
   const crossCompare = fmtR(totalCross, totalCrossPrior)
   const zjCompare = fmtR(totalZJ, totalZJPrior)
   const effCompare = fmtR(totalEff, effBase)
 
-  // Child row priors for YoY (use national totals scaled by dateFactor)
-  const totalA10kPrior = Math.round(N.annual10k_prior * df)
-  const totalNAPrior = Math.round(N.newActive_prior * df)
-  const totalHAPrior = Math.round(N.highendActive_prior * df)
-  const totalCBPrior = Math.round(N.crossBorder_sub_prior * df)
-  const totalNormalPrior = conRows.reduce((s, r) => s + r.normalPrior, 0)
-  const totalInstallPrior = conRows.reduce((s, r) => s + r.installmentPrior, 0)
-  const totalOverseasPrior = +(N.overseasConsume_prior * df).toFixed(2)
-  const totalCashPrior = +(N.cashWithdraw_prior * df).toFixed(2)
+  // Child row priors for YoY
+  const totalNormalPrior = fCon.reduce((s, r) => s + r.normalPrior, 0)
+  const totalInstallPrior = fCon.reduce((s, r) => s + r.installmentPrior, 0)
+  // For efficiency sub-indicators & cross sub: scale from effBase ratio
+  const effRatio = effBase > 0 ? totalEff / effBase : 1.08
+  const totalA10kPrior = Math.round(totalA10k / effRatio)
+  const totalNAPrior = Math.round(totalNA / effRatio)
+  const totalHAPrior = Math.round(totalHA / effRatio)
+  const totalCBPrior = Math.round(totalCB / effRatio)
+  const crossRatio = totalCrossPrior > 0 ? totalCross / totalCrossPrior : 1.1
+  const totalOverseasPrior = +(totalOverseas / crossRatio).toFixed(2)
+  const totalCashPrior = +(totalCash / crossRatio).toFixed(2)
 
   const a10kCompare = fmtR(totalA10k, totalA10kPrior || totalA10k * 0.92)
   const naCompare = fmtR(totalNA, totalNAPrior || totalNA * 0.88)
