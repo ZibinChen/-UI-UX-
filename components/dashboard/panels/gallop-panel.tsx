@@ -696,7 +696,7 @@ function EfficiencyTable({ selectedDate, highlightId }: { selectedDate: string; 
           {rows.map((row, idx) => {
             const hl = row.branchId === highlightId
             return (
-              <tr key={row.branchId} className={hl ? "bg-primary/10 font-semibold" : "hover:bg-muted/30"}>
+              <tr key={row.branchId} className={hl ? "bg-red-50 dark:bg-red-950/30 font-semibold" : "hover:bg-muted/30"}>
                 <td className={`${tdBase} text-center`}>{idx + 1}</td>
                 <td className={`${tdBase} text-left text-foreground`}>{row.branchName}</td>
                 <td className={tdBase}>{row.annual10k.toLocaleString()}</td>
@@ -752,7 +752,7 @@ function ConsumeTable({ selectedDate, highlightId }: { selectedDate: string; hig
             const hl = row.branchId === highlightId
             const isPositive = row.yoyGrowth >= 0
             return (
-              <tr key={row.branchId} className={hl ? "bg-primary/10 font-semibold" : "hover:bg-muted/30"}>
+              <tr key={row.branchId} className={hl ? "bg-red-50 dark:bg-red-950/30 font-semibold" : "hover:bg-muted/30"}>
                 <td className={`${tdBase} text-center`}>{row.rank}</td>
                 <td className={`${tdBase} text-left text-foreground`}>{row.branchName}</td>
                 <td className={`${tdBase} font-semibold text-foreground`}>{row.totalConsume.toFixed(2)}</td>
@@ -807,7 +807,7 @@ function CrossBorderTable({ selectedDate, highlightId }: { selectedDate: string;
           {rows.map(row => {
             const hl = row.branchId === highlightId
             return (
-              <tr key={row.branchId} className={hl ? "bg-primary/10 font-semibold" : "hover:bg-muted/30"}>
+              <tr key={row.branchId} className={hl ? "bg-red-50 dark:bg-red-950/30 font-semibold" : "hover:bg-muted/30"}>
                 <td className={`${tdBase} text-center`}>{row.rank}</td>
                 <td className={`${tdBase} text-left text-foreground`}>{row.branchName}</td>
                 <td className={`${tdBase} font-semibold text-foreground`}>{row.totalCross.toFixed(2)}</td>
@@ -862,7 +862,7 @@ function ZhuojunTable({ selectedDate, highlightId }: { selectedDate: string; hig
           {rows.map(row => {
             const hl = row.branchId === highlightId
             return (
-              <tr key={row.branchId} className={hl ? "bg-primary/10 font-semibold" : "hover:bg-muted/30"}>
+              <tr key={row.branchId} className={hl ? "bg-red-50 dark:bg-red-950/30 font-semibold" : "hover:bg-muted/30"}>
                 <td className={`${tdBase} text-center`}>{row.rank}</td>
                 <td className={`${tdBase} text-left text-foreground`}>{row.branchName}</td>
                 <td className={`${tdBase} font-semibold text-foreground`}>{row.newCards.toFixed(2)}</td>

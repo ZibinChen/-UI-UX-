@@ -176,9 +176,9 @@ function OverviewTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlight
           {sorted.map(r => {
             const hl = r.branchId === highlightId
             return (
-              <tr key={r.branchId} className={cn(hl && "bg-primary/5")}>
+              <tr key={r.branchId} className={cn(hl && "bg-red-50 dark:bg-red-950/30")}>
                 <td className={cn(tdBase, "text-center font-medium")}>{r.rank}</td>
-                <td className={cn(tdBase, "text-left font-medium", hl && "text-primary")} suppressHydrationWarning>{r.branchName}</td>
+                <td className={cn(tdBase, "text-left font-medium", hl && "text-red-600 dark:text-red-400")} suppressHydrationWarning>{r.branchName}</td>
                 <td className={cn(tdBase, "font-semibold")}>{r.totalScore.toFixed(2)}</td>
                 <td className={tdBase}>{r.badDebtTotalScore.toFixed(2)}</td>
                 <td className={tdBase}>{r.recoveryTotalScore.toFixed(2)}</td>
@@ -231,9 +231,9 @@ function BadDebtTable({ rows, highlightId, bdQuarters }: { rows: CreditRiskRow[]
           {sorted.map(r => {
             const hl = r.branchId === highlightId
             return (
-              <tr key={r.branchId} className={cn(hl && "bg-primary/5")}>
+              <tr key={r.branchId} className={cn(hl && "bg-red-50 dark:bg-red-950/30")}>
                 <td className={cn(tdBase, "text-center font-medium")}>{r.rank}</td>
-                <td className={cn(tdBase, "text-left font-medium", hl && "text-primary")} suppressHydrationWarning>{r.branchName}</td>
+                <td className={cn(tdBase, "text-left font-medium", hl && "text-red-600 dark:text-red-400")} suppressHydrationWarning>{r.branchName}</td>
                 <td className={cn(tdBase, "font-semibold")}>{r.badDebtTotalScore.toFixed(2)}</td>
                 {bdQuarters.map(qId => {
                   const d = r.quarterDetails.find(x => x.quarterId === qId)
@@ -292,9 +292,9 @@ function RecoveryTable({ rows, highlightId, bdQuarters }: { rows: CreditRiskRow[
           {sorted.map(r => {
             const hl = r.branchId === highlightId
             return (
-              <tr key={r.branchId} className={cn(hl && "bg-primary/5")}>
+              <tr key={r.branchId} className={cn(hl && "bg-red-50 dark:bg-red-950/30")}>
                 <td className={cn(tdBase, "text-center font-medium")}>{r.rank}</td>
-                <td className={cn(tdBase, "text-left font-medium", hl && "text-primary")} suppressHydrationWarning>{r.branchName}</td>
+                <td className={cn(tdBase, "text-left font-medium", hl && "text-red-600 dark:text-red-400")} suppressHydrationWarning>{r.branchName}</td>
                 <td className={cn(tdBase, "font-semibold")}>{r.recoveryTotalScore.toFixed(2)}</td>
                 {bdQuarters.map(qId => {
                   const d = r.quarterDetails.find(x => x.quarterId === qId)
@@ -356,9 +356,9 @@ function WriteoffTable({ rows, highlightId, woQuarters }: { rows: CreditRiskRow[
           {sorted.map(r => {
             const hl = r.branchId === highlightId
             return (
-              <tr key={r.branchId} className={cn(hl && "bg-primary/5")}>
+              <tr key={r.branchId} className={cn(hl && "bg-red-50 dark:bg-red-950/30")}>
                 <td className={cn(tdBase, "text-center font-medium")}>{r.rank}</td>
-                <td className={cn(tdBase, "text-left font-medium", hl && "text-primary")} suppressHydrationWarning>{r.branchName}</td>
+                <td className={cn(tdBase, "text-left font-medium", hl && "text-red-600 dark:text-red-400")} suppressHydrationWarning>{r.branchName}</td>
                 <td className={cn(tdBase, "font-semibold", r.writeoffTotalDeduction < 0 && "text-red-500")}>
                   {r.writeoffTotalDeduction.toFixed(2)}
                 </td>

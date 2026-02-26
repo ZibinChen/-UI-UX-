@@ -494,7 +494,7 @@ function OverviewTable({ rows, highlightId }: { rows: EfficiencyRow[]; highlight
             {sorted.map((row) => {
               const hl = row.branchId === highlightId
               return (
-                <tr key={row.branchId} className={hl ? "bg-primary/10 font-semibold" : "hover:bg-muted/30"}>
+                <tr key={row.branchId} className={hl ? "bg-red-50 dark:bg-red-950/30 font-semibold" : "hover:bg-muted/30"}>
                   <td className={`${tdBase} text-center`}>{row.rank}</td>
                   <td className={`${tdBase} text-left text-foreground`}>{row.branchName}</td>
                   <td className={`${tdBase} font-semibold text-foreground`}>{row.totalScore.toFixed(2)}</td>
@@ -599,7 +599,7 @@ function SystemScoreTable({ rows, highlightId, currentYear, priorYear }: { rows:
             {sorted.map((row) => {
               const hl = row.branchId === highlightId
               return (
-                <tr key={row.branchId} className={hl ? "bg-primary/10 font-semibold" : "hover:bg-muted/30"}>
+                <tr key={row.branchId} className={hl ? "bg-red-50 dark:bg-red-950/30 font-semibold" : "hover:bg-muted/30"}>
                   <td className={`${tdBase} text-center`}>{row.rank}</td>
                   <td className={`${tdBase} text-left text-foreground`}>{row.branchName}</td>
                   <td className={tdBase}>{row.annual10k.toLocaleString()}</td>
@@ -683,7 +683,7 @@ function DepositDeductionTable({ rows, highlightId, currentYear }: { rows: Effic
                   ? "text-primary"
                   : ""
               return (
-                <tr key={row.branchId} className={hl ? "bg-primary/10 font-semibold" : "hover:bg-muted/30"}>
+                <tr key={row.branchId} className={hl ? "bg-red-50 dark:bg-red-950/30 font-semibold" : "hover:bg-muted/30"}>
                   <td className={`${tdBase} text-center`}>{row.rank}</td>
                   <td className={`${tdBase} text-left text-foreground`}>{row.branchName}</td>
                   <td className={tdBase}>{row.depositActual.toFixed(2)}</td>

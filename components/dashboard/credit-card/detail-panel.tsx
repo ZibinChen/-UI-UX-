@@ -413,12 +413,12 @@ export function DetailPanel({
                     className={cn(
                       "transition-colors",
                       isHighlighted
-                        ? "bg-primary/10 ring-1 ring-inset ring-primary/30"
+                        ? "bg-red-50 dark:bg-red-950/30 ring-1 ring-inset ring-red-300 dark:ring-red-800"
                         : i % 2 === 0 ? "bg-card hover:bg-muted/50" : "bg-muted/30 hover:bg-muted/50"
                     )}
                   >
                     <td className="text-center px-3 py-2 border-b border-border tabular-nums text-foreground">{row.rank}</td>
-                    <td className={cn("text-left px-3 py-2 border-b border-border", isHighlighted ? "font-semibold text-primary" : "text-foreground")}>
+                    <td className={cn("text-left px-3 py-2 border-b border-border", isHighlighted ? "font-semibold text-red-600 dark:text-red-400" : "text-foreground")}>
                       {row.branchName}
                     </td>
                     <td className="text-right px-3 py-2 border-b border-border tabular-nums font-medium text-foreground">{row.valueFormatted}</td>
