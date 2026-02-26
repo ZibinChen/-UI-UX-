@@ -24,12 +24,19 @@ const BRANCH_COUNT = branchList.length
 
 // ── Available quarters ────────────────────────────────────────────
 export const creditRiskQuarters = [
-  { id: "2025Q1", label: "2025年第一季度" },
-  { id: "2025Q2", label: "2025年第二季度" },
-  { id: "2025Q3", label: "2025年第三季度" },
-  { id: "2025Q4", label: "2025年第四季度" },
-  { id: "2026Q1", label: "2026年第一季度" },
+  { id: "2024Q3", label: "2024年第三季度", short: "24年三季度" },
+  { id: "2024Q4", label: "2024年第四季度", short: "24年四季度" },
+  { id: "2025Q1", label: "2025年第一季度", short: "25年一季度" },
+  { id: "2025Q2", label: "2025年第二季度", short: "25年二季度" },
+  { id: "2025Q3", label: "2025年第三季度", short: "25年三季度" },
+  { id: "2025Q4", label: "2025年第四季度", short: "25年四季度" },
+  { id: "2026Q1", label: "2026年第一季度", short: "26年一季度" },
 ]
+
+// User-facing quarters for the dropdown (only 2025Q1 onwards, need enough history)
+export const selectableQuarters = creditRiskQuarters.filter(q =>
+  ["2025Q1","2025Q2","2025Q3","2025Q4","2026Q1"].includes(q.id)
+)
 
 // ── Deterministic random ──────────────────────────────────────────
 function hashCode(s: string): number {
@@ -107,6 +114,7 @@ const NATIONAL_WRITEOFF_BASE = 150000     // ~15亿, branch ~200-8000万元
 
 function quarterScale(qId: string): number {
   const m: Record<string, number> = {
+    "2024Q3": 0.82, "2024Q4": 0.86,
     "2025Q1": 0.90, "2025Q2": 0.95, "2025Q3": 1.0, "2025Q4": 1.05, "2026Q1": 1.08,
   }
   return m[qId] ?? 1.0
@@ -184,14 +192,16 @@ function genQuarterBranch(
 export function generateCreditRiskData(selectedQuarter: string): {
   rows: CreditRiskRow[]
 } {
-  // Determine which quarters to use
+  // Determine which quarters to use (strictly consecutive up to selected)
   const allQIds = creditRiskQuarters.map(q => q.id)
   const selIdx = allQIds.indexOf(selectedQuarter)
   if (selIdx < 0) return { rows: [] }
 
-  // For bad debt & recovery: past 2 quarters (including selected)
-  const bdQuarters = allQIds.slice(Math.max(0, selIdx - 1), selIdx + 1)
-  // For writeoff: past 3 quarters (including selected)
+  // For bad debt & recovery: selected + the one immediately before it (2 consecutive)
+  const bdQuarters = selIdx >= 1
+    ? [allQIds[selIdx - 1], allQIds[selIdx]]
+    : [allQIds[selIdx]]
+  // For writeoff: selected + 2 immediately before it (3 consecutive)
   const woQuarters = allQIds.slice(Math.max(0, selIdx - 2), selIdx + 1)
 
   // Shares
@@ -258,3 +268,14 @@ export function generateCreditRiskData(selectedQuarter: string): {
 }
 
 export { branchList as creditRiskBranchList }
+
+// Helper: extract per-quarter field value for a branch from generated data
+export function extractQuarterField(
+  row: CreditRiskRow,
+  quarterId: string,
+  field: string
+): number {
+  const qd = row.quarterDetails.find(d => d.quarterId === quarterId)
+  if (!qd) return 0
+  return (qd as any)[field] ?? 0
+}

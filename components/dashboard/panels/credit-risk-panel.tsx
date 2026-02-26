@@ -1,10 +1,12 @@
 "use client"
 
-import { useMemo, useState, useCallback } from "react"
+import { useMemo, useState, useCallback, Fragment } from "react"
 import {
   generateCreditRiskData,
   creditRiskQuarters,
+  selectableQuarters,
   creditRiskBranchList,
+  extractQuarterField,
   type CreditRiskRow,
 } from "@/lib/credit-risk-data"
 import { TabNavigation } from "../tab-navigation"
@@ -65,32 +67,63 @@ const subTabs = [
   { id: "writeoff", label: "核销动用扣分明细" },
 ]
 
-const TAB_INDICATORS: Record<string, { id: string; label: string }[]> = {
-  overview: [
-    { id: "totalScore", label: "信用风险总得分" },
-    { id: "badDebtTotalScore", label: "新发生不良得分" },
-    { id: "recoveryTotalScore", label: "表内清收得分" },
-    { id: "writeoffTotalDeduction", label: "核销动用扣分" },
-    { id: "complianceDeduction", label: "内控合规扣分" },
-  ],
-  badDebt: [
-    { id: "badDebtTotalScore", label: "新发生不良得分（合计）" },
-    { id: "totalScore", label: "信用风险总得分" },
-  ],
-  recovery: [
-    { id: "recoveryTotalScore", label: "表内清收得分（合计）" },
-    { id: "totalScore", label: "信用风险总得分" },
-  ],
-  writeoff: [
-    { id: "writeoffTotalDeduction", label: "核销动用扣分（合计）" },
-    { id: "totalScore", label: "信用风险总得分" },
-  ],
+// Helper: get quarter short label
+function qShort(qId: string): string {
+  return creditRiskQuarters.find(q => q.id === qId)?.short ?? qId
 }
 
 const COMPARE_COLORS = [
   "hsl(220, 70%, 50%)", "hsl(0, 85%, 50%)", "hsl(140, 55%, 40%)",
   "hsl(35, 90%, 50%)", "hsl(280, 60%, 55%)", "hsl(180, 55%, 40%)",
 ]
+
+// ── Build dynamic TAB_INDICATORS based on which quarters are in use ──
+function buildTabIndicators(bdQuarters: string[], woQuarters: string[]): Record<string, { id: string; label: string; field?: string; quarterId?: string }[]> {
+  const overview = [
+    { id: "totalScore", label: "信用风险总得分" },
+    { id: "badDebtTotalScore", label: "新发生不良得分" },
+    { id: "recoveryTotalScore", label: "表内清收得分" },
+    { id: "writeoffTotalDeduction", label: "核销动用扣分" },
+    { id: "complianceDeduction", label: "内控合规扣分" },
+  ]
+
+  const badDebt: { id: string; label: string; field?: string; quarterId?: string }[] = [
+    { id: "badDebtTotalScore", label: "新发生不良得分合计" },
+  ]
+  bdQuarters.forEach(qId => {
+    badDebt.push(
+      { id: `bd_actual_${qId}`, label: `${qShort(qId)} 不良额`, field: "badDebtActual", quarterId: qId },
+      { id: `bd_target_${qId}`, label: `${qShort(qId)} 目标`, field: "badDebtTarget", quarterId: qId },
+      { id: `bd_score_${qId}`, label: `${qShort(qId)} 得分`, field: "badDebtScore", quarterId: qId },
+    )
+  })
+
+  const recovery: typeof badDebt = [
+    { id: "recoveryTotalScore", label: "表内清收得分合计" },
+  ]
+  bdQuarters.forEach(qId => {
+    recovery.push(
+      { id: `rc_actual_${qId}`, label: `${qShort(qId)} 清收额`, field: "recoveryActual", quarterId: qId },
+      { id: `rc_target_${qId}`, label: `${qShort(qId)} 目标`, field: "recoveryTarget", quarterId: qId },
+      { id: `rc_rate_${qId}`, label: `${qShort(qId)} 完成率`, field: "recoveryCompRate", quarterId: qId },
+      { id: `rc_score_${qId}`, label: `${qShort(qId)} 得分`, field: "recoveryScore", quarterId: qId },
+    )
+  })
+
+  const writeoff: typeof badDebt = [
+    { id: "writeoffTotalDeduction", label: "核销扣分合计" },
+  ]
+  woQuarters.forEach(qId => {
+    writeoff.push(
+      { id: `wo_actual_${qId}`, label: `${qShort(qId)} 动用额`, field: "writeoffActual", quarterId: qId },
+      { id: `wo_target_${qId}`, label: `${qShort(qId)} 管控目标`, field: "writeoffTarget", quarterId: qId },
+      { id: `wo_rate_${qId}`, label: `${qShort(qId)} 控制率`, field: "writeoffCtrlRate", quarterId: qId },
+      { id: `wo_ded_${qId}`, label: `${qShort(qId)} 扣分`, field: "writeoffDeduction", quarterId: qId },
+    )
+  })
+
+  return { overview, badDebt, recovery, writeoff }
+}
 
 // ── Tooltip ──────────────────────────────────────────────────────
 function CompareLineTooltip({ active, payload, label }: any) {
@@ -165,17 +198,9 @@ function OverviewTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlight
 }
 
 // ── Bad Debt Detail Table ────────────────────────────────────────
-function BadDebtTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlightId: string | null }) {
+function BadDebtTable({ rows, highlightId, bdQuarters }: { rows: CreditRiskRow[]; highlightId: string | null; bdQuarters: string[] }) {
   const s = useSortable()
   const sorted = s.sort(rows)
-  // Get quarter labels from first row
-  const qLabels = rows[0]?.quarterDetails.filter(d =>
-    rows[0].quarterDetails.slice(-2).map(x => x.quarterId).includes(d.quarterId)
-  ).map(d => {
-    const q = creditRiskQuarters.find(x => x.id === d.quarterId)
-    return { id: d.quarterId, short: q?.label.replace("年第", "Q").replace("季度", "") ?? d.quarterId }
-  }) ?? []
-
   return (
     <div className="overflow-x-auto border border-border rounded">
       <table className="w-full text-xs">
@@ -186,15 +211,15 @@ function BadDebtTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlightI
             <th className={cn(thBase, "text-right")} rowSpan={2} onClick={() => s.toggle("badDebtTotalScore")}>
               {"不良得分合计"}<s.SortIcon col="badDebtTotalScore" />
             </th>
-            {qLabels.map(q => (
-              <th key={q.id} className={cn(thBase, "text-center cursor-default")} colSpan={3} suppressHydrationWarning>
-                {q.short}
+            {bdQuarters.map(qId => (
+              <th key={qId} className={cn(thBase, "text-center cursor-default")} colSpan={3} suppressHydrationWarning>
+                {qShort(qId)}
               </th>
             ))}
           </tr>
           <tr>
-            {qLabels.map(q => (
-              <Fragment key={q.id}>
+            {bdQuarters.map(qId => (
+              <Fragment key={qId}>
                 <th className={cn(thBase, "text-right cursor-default")}>{"不良额"}</th>
                 <th className={cn(thBase, "text-right cursor-default")}>{"目标"}</th>
                 <th className={cn(thBase, "text-right cursor-default")}>{"得分"}</th>
@@ -205,21 +230,24 @@ function BadDebtTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlightI
         <tbody>
           {sorted.map(r => {
             const hl = r.branchId === highlightId
-            const relevantQs = r.quarterDetails.slice(-2)
             return (
               <tr key={r.branchId} className={cn(hl && "bg-primary/5")}>
                 <td className={cn(tdBase, "text-center font-medium")}>{r.rank}</td>
                 <td className={cn(tdBase, "text-left font-medium", hl && "text-primary")} suppressHydrationWarning>{r.branchName}</td>
                 <td className={cn(tdBase, "font-semibold")}>{r.badDebtTotalScore.toFixed(2)}</td>
-                {relevantQs.map(d => (
-                  <Fragment key={d.quarterId}>
-                    <td className={tdBase}>{d.badDebtActual.toLocaleString()}</td>
-                    <td className={tdBase}>{d.badDebtTarget.toLocaleString()}</td>
-                    <td className={cn(tdBase, d.badDebtScore < 11.70 && "text-orange-500")}>
-                      {d.badDebtScore.toFixed(2)}
-                    </td>
-                  </Fragment>
-                ))}
+                {bdQuarters.map(qId => {
+                  const d = r.quarterDetails.find(x => x.quarterId === qId)
+                  if (!d) return <Fragment key={qId}><td className={tdBase}>-</td><td className={tdBase}>-</td><td className={tdBase}>-</td></Fragment>
+                  return (
+                    <Fragment key={qId}>
+                      <td className={tdBase}>{d.badDebtActual.toLocaleString()}</td>
+                      <td className={tdBase}>{d.badDebtTarget.toLocaleString()}</td>
+                      <td className={cn(tdBase, d.badDebtScore < 11.70 && "text-orange-500")}>
+                        {d.badDebtScore.toFixed(2)}
+                      </td>
+                    </Fragment>
+                  )
+                })}
               </tr>
             )
           })}
@@ -230,16 +258,9 @@ function BadDebtTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlightI
 }
 
 // ── Recovery Detail Table ────────────────────────────────────────
-function RecoveryTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlightId: string | null }) {
+function RecoveryTable({ rows, highlightId, bdQuarters }: { rows: CreditRiskRow[]; highlightId: string | null; bdQuarters: string[] }) {
   const s = useSortable()
   const sorted = s.sort(rows)
-  const qLabels = rows[0]?.quarterDetails.filter(d =>
-    rows[0].quarterDetails.slice(-2).map(x => x.quarterId).includes(d.quarterId)
-  ).map(d => {
-    const q = creditRiskQuarters.find(x => x.id === d.quarterId)
-    return { id: d.quarterId, short: q?.label.replace("年第", "Q").replace("季度", "") ?? d.quarterId }
-  }) ?? []
-
   return (
     <div className="overflow-x-auto border border-border rounded">
       <table className="w-full text-xs">
@@ -250,15 +271,15 @@ function RecoveryTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlight
             <th className={cn(thBase, "text-right")} rowSpan={2} onClick={() => s.toggle("recoveryTotalScore")}>
               {"清收得分合计"}<s.SortIcon col="recoveryTotalScore" />
             </th>
-            {qLabels.map(q => (
-              <th key={q.id} className={cn(thBase, "text-center cursor-default")} colSpan={4} suppressHydrationWarning>
-                {q.short}
+            {bdQuarters.map(qId => (
+              <th key={qId} className={cn(thBase, "text-center cursor-default")} colSpan={4} suppressHydrationWarning>
+                {qShort(qId)}
               </th>
             ))}
           </tr>
           <tr>
-            {qLabels.map(q => (
-              <Fragment key={q.id}>
+            {bdQuarters.map(qId => (
+              <Fragment key={qId}>
                 <th className={cn(thBase, "text-right cursor-default")}>{"清收额"}</th>
                 <th className={cn(thBase, "text-right cursor-default")}>{"目标"}</th>
                 <th className={cn(thBase, "text-right cursor-default")}>{"完成率"}</th>
@@ -270,24 +291,27 @@ function RecoveryTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlight
         <tbody>
           {sorted.map(r => {
             const hl = r.branchId === highlightId
-            const relevantQs = r.quarterDetails.slice(-2)
             return (
               <tr key={r.branchId} className={cn(hl && "bg-primary/5")}>
                 <td className={cn(tdBase, "text-center font-medium")}>{r.rank}</td>
                 <td className={cn(tdBase, "text-left font-medium", hl && "text-primary")} suppressHydrationWarning>{r.branchName}</td>
                 <td className={cn(tdBase, "font-semibold")}>{r.recoveryTotalScore.toFixed(2)}</td>
-                {relevantQs.map(d => (
-                  <Fragment key={d.quarterId}>
-                    <td className={tdBase}>{d.recoveryActual.toLocaleString()}</td>
-                    <td className={tdBase}>{d.recoveryTarget.toLocaleString()}</td>
-                    <td className={cn(tdBase, d.recoveryCompRate >= 130 ? "text-green-600" : d.recoveryCompRate < 100 ? "text-red-500" : "")}>
-                      {d.recoveryCompRate.toFixed(2)}%
-                    </td>
-                    <td className={cn(tdBase, d.recoveryScore < 7.80 && "text-orange-500")}>
-                      {d.recoveryScore.toFixed(2)}
-                    </td>
-                  </Fragment>
-                ))}
+                {bdQuarters.map(qId => {
+                  const d = r.quarterDetails.find(x => x.quarterId === qId)
+                  if (!d) return <Fragment key={qId}><td className={tdBase}>-</td><td className={tdBase}>-</td><td className={tdBase}>-</td><td className={tdBase}>-</td></Fragment>
+                  return (
+                    <Fragment key={qId}>
+                      <td className={tdBase}>{d.recoveryActual.toLocaleString()}</td>
+                      <td className={tdBase}>{d.recoveryTarget.toLocaleString()}</td>
+                      <td className={cn(tdBase, d.recoveryCompRate >= 130 ? "text-green-600" : d.recoveryCompRate < 100 ? "text-red-500" : "")}>
+                        {d.recoveryCompRate.toFixed(2)}%
+                      </td>
+                      <td className={cn(tdBase, d.recoveryScore < 7.80 && "text-orange-500")}>
+                        {d.recoveryScore.toFixed(2)}
+                      </td>
+                    </Fragment>
+                  )
+                })}
               </tr>
             )
           })}
@@ -298,16 +322,9 @@ function RecoveryTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlight
 }
 
 // ── Writeoff Detail Table ────────────────────────────────────────
-function WriteoffTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlightId: string | null }) {
+function WriteoffTable({ rows, highlightId, woQuarters }: { rows: CreditRiskRow[]; highlightId: string | null; woQuarters: string[] }) {
   const s = useSortable()
   const sorted = s.sort(rows)
-  // All quarters (up to 3) used for writeoff
-  const allQIds = rows[0]?.quarterDetails.map(d => d.quarterId) ?? []
-  const qLabels = allQIds.map(qId => {
-    const q = creditRiskQuarters.find(x => x.id === qId)
-    return { id: qId, short: q?.label.replace("年第", "Q").replace("季度", "") ?? qId }
-  })
-
   return (
     <div className="overflow-x-auto border border-border rounded">
       <table className="w-full text-xs">
@@ -318,15 +335,15 @@ function WriteoffTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlight
             <th className={cn(thBase, "text-right")} rowSpan={2} onClick={() => s.toggle("writeoffTotalDeduction")}>
               {"核销扣分合计"}<s.SortIcon col="writeoffTotalDeduction" />
             </th>
-            {qLabels.map(q => (
-              <th key={q.id} className={cn(thBase, "text-center cursor-default")} colSpan={4} suppressHydrationWarning>
-                {q.short}
+            {woQuarters.map(qId => (
+              <th key={qId} className={cn(thBase, "text-center cursor-default")} colSpan={4} suppressHydrationWarning>
+                {qShort(qId)}
               </th>
             ))}
           </tr>
           <tr>
-            {qLabels.map(q => (
-              <Fragment key={q.id}>
+            {woQuarters.map(qId => (
+              <Fragment key={qId}>
                 <th className={cn(thBase, "text-right cursor-default")}>{"动用额"}</th>
                 <th className={cn(thBase, "text-right cursor-default")}>{"管控目标"}</th>
                 <th className={cn(thBase, "text-right cursor-default")}>{"控制率"}</th>
@@ -345,18 +362,22 @@ function WriteoffTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlight
                 <td className={cn(tdBase, "font-semibold", r.writeoffTotalDeduction < 0 && "text-red-500")}>
                   {r.writeoffTotalDeduction.toFixed(2)}
                 </td>
-                {r.quarterDetails.map(d => (
-                  <Fragment key={d.quarterId}>
-                    <td className={tdBase}>{d.writeoffActual.toLocaleString()}</td>
-                    <td className={tdBase}>{d.writeoffTarget.toLocaleString()}</td>
-                    <td className={cn(tdBase, d.writeoffCtrlRate > 0 && "text-red-500")}>
-                      {d.writeoffCtrlRate.toFixed(2)}%
-                    </td>
-                    <td className={cn(tdBase, d.writeoffDeduction < 0 && "text-red-500")}>
-                      {d.writeoffDeduction.toFixed(2)}
-                    </td>
-                  </Fragment>
-                ))}
+                {woQuarters.map(qId => {
+                  const d = r.quarterDetails.find(x => x.quarterId === qId)
+                  if (!d) return <Fragment key={qId}><td className={tdBase}>-</td><td className={tdBase}>-</td><td className={tdBase}>-</td><td className={tdBase}>-</td></Fragment>
+                  return (
+                    <Fragment key={qId}>
+                      <td className={tdBase}>{d.writeoffActual.toLocaleString()}</td>
+                      <td className={tdBase}>{d.writeoffTarget.toLocaleString()}</td>
+                      <td className={cn(tdBase, d.writeoffCtrlRate > 0 && "text-red-500")}>
+                        {d.writeoffCtrlRate.toFixed(2)}%
+                      </td>
+                      <td className={cn(tdBase, d.writeoffDeduction < 0 && "text-red-500")}>
+                        {d.writeoffDeduction.toFixed(2)}
+                      </td>
+                    </Fragment>
+                  )
+                })}
               </tr>
             )
           })}
@@ -366,13 +387,10 @@ function WriteoffTable({ rows, highlightId }: { rows: CreditRiskRow[]; highlight
   )
 }
 
-// Need Fragment import
-import { Fragment } from "react"
-
 // ── Main Panel ───────────────────────────────────────────────────
 export function CreditRiskPanel({ selectedInstitution }: CreditRiskPanelProps) {
   const [activeTab, setActiveTab] = useState("overview")
-  const [selectedQuarter, setSelectedQuarter] = useState(creditRiskQuarters[creditRiskQuarters.length - 1].id)
+  const [selectedQuarter, setSelectedQuarter] = useState(selectableQuarters[selectableQuarters.length - 1].id)
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -387,8 +405,21 @@ export function CreditRiskPanel({ selectedInstitution }: CreditRiskPanelProps) {
     [selectedQuarter]
   )
 
+  // Determine which quarters are used (for table headers and trend indicators)
+  const allQIds = creditRiskQuarters.map(q => q.id)
+  const selIdx = allQIds.indexOf(selectedQuarter)
+  const bdQuarters = selIdx >= 1
+    ? [allQIds[selIdx - 1], allQIds[selIdx]]
+    : [allQIds[selIdx]]
+  const woQuarters = allQIds.slice(Math.max(0, selIdx - 2), selIdx + 1)
+
+  const tabIndicators = useMemo(
+    () => buildTabIndicators(bdQuarters, woQuarters),
+    [bdQuarters.join(","), woQuarters.join(",")]
+  )
+
   const highlightId = selectedInstitution === "all" ? null : selectedInstitution
-  const currentTabIndicators = TAB_INDICATORS[activeTab] ?? TAB_INDICATORS.overview
+  const currentTabIndicators = tabIndicators[activeTab] ?? tabIndicators.overview
 
   const openCompareDialog = useCallback(() => {
     const initial: string[] = []
@@ -434,13 +465,24 @@ export function CreditRiskPanel({ selectedInstitution }: CreditRiskPanelProps) {
 
     return confirmedIndicators.map(indId => {
       const indDef = currentTabIndicators.find(i => i.id === indId)
-      const quarterData = creditRiskQuarters.map(q => {
+
+      const quarterData = selectableQuarters.map(q => {
         const { rows: qRows } = generateCreditRiskData(q.id)
-        const entry: Record<string, any> = { quarter: q.label.replace("年第", "Q").replace("季度", "") }
+        const entry: Record<string, any> = { quarter: q.short }
         confirmedBranches.forEach(bId => {
           const row = qRows.find(r => r.branchId === bId)
           const br = creditRiskBranchList.find(b => b.id === bId)
-          entry[br?.name ?? bId] = row ? (row[indId as keyof CreditRiskRow] as number) : 0
+          let val = 0
+          if (row) {
+            if (indDef?.field && indDef?.quarterId) {
+              // Per-quarter field: extract from the matching quarter detail
+              val = extractQuarterField(row, indDef.quarterId, indDef.field)
+            } else {
+              // Aggregated field
+              val = (row[indId as keyof CreditRiskRow] as number) ?? 0
+            }
+          }
+          entry[br?.name ?? bId] = val
         })
         return entry
       })
@@ -481,7 +523,7 @@ export function CreditRiskPanel({ selectedInstitution }: CreditRiskPanelProps) {
               onChange={(e) => setSelectedQuarter(e.target.value)}
               className="text-xs border border-border rounded px-2 py-1 bg-card text-foreground"
             >
-              {creditRiskQuarters.map(q => (
+              {selectableQuarters.map(q => (
                 <option key={q.id} value={q.id}>{q.label}</option>
               ))}
             </select>
@@ -498,9 +540,9 @@ export function CreditRiskPanel({ selectedInstitution }: CreditRiskPanelProps) {
 
       {/* Tables */}
       {activeTab === "overview" && <OverviewTable rows={rows} highlightId={highlightId} />}
-      {activeTab === "badDebt" && <BadDebtTable rows={rows} highlightId={highlightId} />}
-      {activeTab === "recovery" && <RecoveryTable rows={rows} highlightId={highlightId} />}
-      {activeTab === "writeoff" && <WriteoffTable rows={rows} highlightId={highlightId} />}
+      {activeTab === "badDebt" && <BadDebtTable rows={rows} highlightId={highlightId} bdQuarters={bdQuarters} />}
+      {activeTab === "recovery" && <RecoveryTable rows={rows} highlightId={highlightId} bdQuarters={bdQuarters} />}
+      {activeTab === "writeoff" && <WriteoffTable rows={rows} highlightId={highlightId} woQuarters={woQuarters} />}
 
       {/* Scoring rules */}
       {activeTab === "overview" && (
@@ -514,18 +556,16 @@ export function CreditRiskPanel({ selectedInstitution }: CreditRiskPanelProps) {
           </ul>
         </div>
       )}
-
       {activeTab === "badDebt" && (
         <div className="bg-muted/30 rounded border border-border px-4 py-3">
           <p className="text-xs font-semibold text-foreground mb-2">{"新发生不良得分计算"}</p>
           <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
             <li>{"每季度：新发生不良额 vs 目标 -> 不良额 ≤ 目标则得11.70分"}</li>
             <li>{"不良额 > 目标：得分 = 11.70 × (1 - 超额比例 × 2)，最低0分"}</li>
-            <li>{"总分 = 最近2个季度得分之和（满分 23.40）"}</li>
+            <li>{"总分 = 最近2个连续季度得分之和（满分 23.40）"}</li>
           </ul>
         </div>
       )}
-
       {activeTab === "recovery" && (
         <div className="bg-muted/30 rounded border border-border px-4 py-3">
           <p className="text-xs font-semibold text-foreground mb-2">{"表内清收得分计算"}</p>
@@ -533,11 +573,10 @@ export function CreditRiskPanel({ selectedInstitution }: CreditRiskPanelProps) {
             <li>{"每季度：清收额 / 清收目标 = 完成率"}</li>
             <li>{"完成率 ≥ 130% 则得满分 7.80"}</li>
             <li>{"完成率 < 130%：得分 = 7.80 × (完成率 / 130%)，按比例递减"}</li>
-            <li>{"总分 = 最近2个季度得分之和（满分 15.60）"}</li>
+            <li>{"总分 = 最近2个连续季度得分之和（满分 15.60）"}</li>
           </ul>
         </div>
       )}
-
       {activeTab === "writeoff" && (
         <div className="bg-muted/30 rounded border border-border px-4 py-3">
           <p className="text-xs font-semibold text-foreground mb-2">{"核销动用扣分计算"}</p>
@@ -545,7 +584,7 @@ export function CreditRiskPanel({ selectedInstitution }: CreditRiskPanelProps) {
             <li>{"每季度：核销动用额 vs 管控目标 -> 控制率 = (动用额 - 目标) / 目标"}</li>
             <li>{"动用额 ≤ 目标：控制率 = 0%，不扣分"}</li>
             <li>{"动用额 > 目标：按控制率扣分（每季度最多扣2分）"}</li>
-            <li>{"总扣分 = 最近3个季度扣分之和"}</li>
+            <li>{"总扣分 = 最近3个连续季度扣分之和"}</li>
           </ul>
         </div>
       )}
@@ -703,7 +742,7 @@ export function CreditRiskPanel({ selectedInstitution }: CreditRiskPanelProps) {
                 disabled={selectedIndicators.length === 0}
                 className="text-xs px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
               >
-                {"确认对比"}
+                {"生成趋势对比"}
               </button>
             )}
           </div>
