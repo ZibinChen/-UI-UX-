@@ -15,14 +15,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install pnpm # 关键步骤：安装 pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: 'pnpm'
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: pnpm install --no-frozen-lockfile # 使用 pnpm 强制安装
       - name: Build with Next.js
-        run: npm run build
+        run: pnpm run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
