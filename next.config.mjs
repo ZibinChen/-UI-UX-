@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // 告诉 Next.js 将项目导出为静态 HTML
+  output: 'export', // 这行是关键，它会生成 HTML 文件
   images: {
-    unoptimized: true, // GitHub Pages 不支持 Next.js 的默认图片优化
+    unoptimized: true, // GitHub Pages 不支持 Next.js 的图片优化功能
   },
 };
 
