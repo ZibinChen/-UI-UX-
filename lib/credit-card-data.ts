@@ -11,7 +11,7 @@
 //   7. Rankings come from sorting branch growth rates.
 // ====================================================================
 
-export type IndicatorCategory = "customer" | "consumption" | "loan" | "crossborder" | "highend" | "highconsume"
+export type IndicatorCategory = "customer" | "consumption" | "loan" | "crossborder" | "highend" | "highconsume" | "fourcustomer"
 
 export interface IndicatorRow {
   id: string
@@ -163,6 +163,14 @@ const keyCustomerDefs: Def[] = [
   { id: "kc_hc_upgrade",   name: "中高消费升级客户",           indent: 1, category: "highconsume", unit: "万户", comparisonType: "较年初", nationalTotal: 689,  nationalYearStart: 605 },
   { id: "kc_hc_scene",     name: "中高消费大额场景升级客户",    indent: 2, category: "highconsume", unit: "万户", comparisonType: "同比",   nationalTotal: 245,  nationalYearStart: 218 },
   { id: "kc_hc_asset",     name: "中高资产消费升级客户",        indent: 2, category: "highconsume", unit: "万户", comparisonType: "同比",   nationalTotal: 312,  nationalYearStart: 276 },
+]
+
+// ── Four Customer Group indicator definitions (对私折效四大客群) ──
+const fourCustomerDefs: Def[] = [
+  { id: "fc_monthly_active", name: "月活客群",           indent: 0, category: "fourcustomer", unit: "万户", comparisonType: "同比", nationalTotal: 8500,  nationalYearStart: 7800 },
+  { id: "fc_new_active",     name: "新增活跃客户",       indent: 0, category: "fourcustomer", unit: "万户", comparisonType: "同比", nationalTotal: 2680,  nationalYearStart: 2350 },
+  { id: "fc_highend_active", name: "中高端新增活跃客户", indent: 0, category: "fourcustomer", unit: "万户", comparisonType: "同比", nationalTotal: 780,   nationalYearStart: 650 },
+  { id: "fc_cross_border",   name: "跨境交易客户",       indent: 0, category: "fourcustomer", unit: "万户", comparisonType: "同比", nationalTotal: 2400,  nationalYearStart: 2100 },
 ]
 
 // ── Compute normalized shares for a specific indicator ────────────
@@ -354,8 +362,58 @@ export function generateKeyCustomerIndicators(institutionId: string, dateStr: st
   })
 }
 
+// ── Four Customer Group Indicators generator ──────────────────────
+export function generateFourCustomerIndicators(institutionId: string, dateStr: string): IndicatorRow[] {
+  const isSummary = institutionId === "all"
+  const df = dateFactor(dateStr)
+
+  return fourCustomerDefs.map((def) => {
+    const sharesCurrent = computeShares(def.id, "cur")
+    const sharesYearStart = computeShares(def.id, "ys")
+    const adjustedSharesCurrent = sharesCurrent.map((s, i) => {
+      const drift = (seeded(hashCode(`${def.id}_${branchList[i].id}_drift`)) - 0.5) * 0.001 * (df - 31)
+      return Math.max(0.001, s + drift)
+    })
+    const sumAdj = adjustedSharesCurrent.reduce((a, b) => a + b, 0)
+    const normalizedCurrent = adjustedSharesCurrent.map((s) => s / sumAdj)
+
+    type BranchData = { id: string; current: number; yearStart: number; growth: number }
+    const branches: BranchData[] = branchList.map((b, i) => {
+      const current = def.nationalTotal * normalizedCurrent[i]
+      const yearStart = def.nationalYearStart * sharesYearStart[i]
+      const growth = yearStart > 0 ? (current - yearStart) / yearStart : 0
+      return { id: b.id, current, yearStart, growth }
+    })
+
+    const nationalGrowth = (def.nationalTotal - def.nationalYearStart) / def.nationalYearStart
+    const sorted = [...branches].sort((a, b) => b.growth - a.growth)
+    const rankMap = new Map<string, number>()
+    sorted.forEach((b, i) => rankMap.set(b.id, i + 1))
+
+    if (isSummary) {
+      return {
+        id: def.id, name: def.name, indent: def.indent, category: def.category,
+        value: fmtValue(def.nationalTotal, def.unit), rawValue: def.nationalTotal, unit: def.unit,
+        comparisonType: def.comparisonType, comparison: fmtRate(nationalGrowth), comparisonRaw: nationalGrowth,
+        growthVsAll: "", growthVsAllRaw: 0, growthRank: 0,
+      }
+    }
+
+    const br = branches.find((b) => b.id === institutionId)!
+    const rank = rankMap.get(institutionId) ?? 0
+    const growthDiff = br.growth - nationalGrowth
+
+    return {
+      id: def.id, name: def.name, indent: def.indent, category: def.category,
+      value: fmtValue(br.current, def.unit), rawValue: br.current, unit: def.unit,
+      comparisonType: def.comparisonType, comparison: fmtRate(br.growth), comparisonRaw: br.growth,
+      growthVsAll: fmtRate(growthDiff), growthVsAllRaw: growthDiff, growthRank: rank,
+    }
+  })
+}
+
 // ── Exported helpers ──────────────────────────────────────────────
-export { defs, keyCustomerDefs, branchList, BRANCH_COUNT, computeShares, seeded, hashCode, dateFactor, fmtValue, fmtRate }
+export { defs, keyCustomerDefs, fourCustomerDefs, branchList, BRANCH_COUNT, computeShares, seeded, hashCode, dateFactor, fmtValue, fmtRate }
 
 // ── Trend data: 12 months of data for an indicator ────────────────
 export interface TrendPoint {
@@ -369,7 +427,7 @@ const trendMonths = [
   "2025/09","2025/10","2025/11","2025/12","2026/01","2026/02",
 ]
 
-const allDefs = [...defs, ...keyCustomerDefs]
+const allDefs = [...defs, ...keyCustomerDefs, ...fourCustomerDefs]
 
 export function generateTrendData(indicatorId: string, institutionId: string): TrendPoint[] {
   const def = allDefs.find(d => d.id === indicatorId)
