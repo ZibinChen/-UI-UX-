@@ -6,8 +6,8 @@ import { ActivityProgressPanel } from "../cross-sell/activity-progress-panel"
 import { WeeklyPanel } from "../cross-sell/weekly-panel"
 
 const subTabs = [
-  { id: "progress", label: "活动开展情况" },
-  { id: "weekly", label: "活动开展当周情况" },
+  { id: "progress", label: "自动还款绑定-信用卡新客户" },
+  { id: "weekly", label: "自动还款绑定-信用卡新客户（当周情况）" },
 ]
 
 interface CrossSellPanelProps {
@@ -37,7 +37,7 @@ export function CrossSellPanel({ selectedInstitution, selectedDate }: CrossSellP
       {/* Report Title */}
       <div className="bg-card rounded border border-border px-4 py-3" suppressHydrationWarning>
         <h2 className="text-base font-semibold text-foreground text-center" suppressHydrationWarning>
-          {'交叉销售 — 自动还款绑定"金"喜营销活动'}
+          {'交叉销售'}
         </h2>
         <p className="text-xs text-muted-foreground text-center mt-1" suppressHydrationWarning>
           {`活动期间：2025年9月5日 - ${endDateLabel}`}
