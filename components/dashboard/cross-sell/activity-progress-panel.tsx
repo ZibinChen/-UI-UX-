@@ -168,7 +168,7 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
   return (
     <div className="flex flex-col gap-6">
       <h3 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
-        {'交叉销售 - 活动开展情况（2025年9月5日 至 '}{dateLabel}{'）'}
+        {'自动还款绑定-信用卡新客户（2025年9月5日 至 '}{dateLabel}{'）'}
       </h3>
 
       {/* KPI + trend area */}
@@ -297,7 +297,7 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
       <div className="bg-card rounded border border-border overflow-hidden">
         <div className="px-4 py-3 border-b border-border">
           <h4 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
-            {'下辖机构排名 — 活动开展情况'}
+            {'下辖机构排名 — 自动还款绑定-信用卡新客户'}
           </h4>
         </div>
         <div className="overflow-x-auto">

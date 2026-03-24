@@ -161,7 +161,7 @@ export function WeeklyPanel({ selectedInstitution }: Props) {
       {/* Header with week selector */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
-          {"交叉销售 - 活动开展当周情况"}
+          {"自动还款绑定-信用卡新客户（当周情况）"}
         </h3>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">{"选择周次："}</span>
