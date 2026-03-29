@@ -43,29 +43,29 @@ export function DashboardShell() {
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
       {/* Mobile Header */}
-      <header className="h-11 border-b border-border bg-card flex items-center justify-between px-3 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground text-xs font-bold">B</span>
+      <header className="h-10 border-b border-border bg-card flex items-center justify-between px-2 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground text-[10px] font-bold">B</span>
           </div>
-          <span className="text-sm font-semibold text-foreground">管理驾驶舱</span>
+          <span className="text-xs font-semibold text-foreground">管理驾驶舱</span>
         </div>
-        <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-muted-foreground" />
-          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="消息">
-            <Bell className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-1">
+          <User className="h-3.5 w-3.5 text-muted-foreground" />
+          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="消息">
+            <Bell className="h-3.5 w-3.5 text-muted-foreground" />
           </Button>
         </div>
       </header>
 
       {/* Mobile Filter Bar - Compact horizontal layout */}
-      <div className="px-3 py-2 border-b border-border bg-card flex items-center gap-2 shrink-0">
+      <div className="px-2 py-1.5 border-b border-border bg-card flex items-center gap-1.5 shrink-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 gap-1 text-xs flex-1 max-w-[140px]">
-              <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+            <Button variant="outline" size="sm" className="h-6 gap-0.5 text-[10px] flex-1 max-w-[120px] px-1.5">
+              <Building2 className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
               <span className="truncate">{currentInst?.name ?? '选择机构'}</span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
+              <ChevronDown className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-48 max-h-[300px]">
@@ -85,10 +85,10 @@ export function DashboardShell() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 gap-1 text-xs">
-              <CalendarDays className="h-3 w-3 text-muted-foreground shrink-0" />
+            <Button variant="outline" size="sm" className="h-6 gap-0.5 text-[10px] px-1.5">
+              <CalendarDays className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
               <span>{selectedDate}</span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
+              <ChevronDown className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-36 max-h-[250px]">
@@ -117,7 +117,7 @@ export function DashboardShell() {
                 key={tab.id}
                 onClick={() => setActiveMainTab(tab.id)}
                 className={cn(
-                  "px-3 py-2.5 text-xs font-medium whitespace-nowrap relative shrink-0 transition-colors",
+                  "px-2 py-2 text-[10px] font-medium whitespace-nowrap relative shrink-0 transition-colors",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
@@ -133,7 +133,7 @@ export function DashboardShell() {
 
       {/* Content - Scrollable */}
       <ScrollArea className="flex-1">
-        <div className="p-3">
+        <div className="p-2">
           {activeMainTab === "comprehensive" && (
             <CreditCardPanel selectedInstitution={selectedInstitution} selectedDate={selectedDate} />
           )}
@@ -150,7 +150,7 @@ export function DashboardShell() {
       </ScrollArea>
 
       {/* Bottom Navigation */}
-      <nav className="h-[52px] border-t border-border bg-card flex items-center justify-around shrink-0 px-2 pb-1">
+      <nav className="h-[48px] border-t border-border bg-card flex items-center justify-around shrink-0 px-1 pb-0.5">
         {bottomNavItems.map((item) => {
           const isActive = activeNavItem === item.id
           return (
@@ -158,12 +158,12 @@ export function DashboardShell() {
               key={item.id}
               onClick={() => setActiveNavItem(item.id)}
               className={cn(
-                "flex flex-col items-center gap-0.5 py-1 px-2 rounded transition-colors min-w-[48px]",
+                "flex flex-col items-center gap-0 py-0.5 px-1.5 rounded transition-colors min-w-[44px]",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-[10px]">{item.label}</span>
+              <item.icon className="h-4 w-4" />
+              <span className="text-[9px]">{item.label}</span>
             </button>
           )
         })}

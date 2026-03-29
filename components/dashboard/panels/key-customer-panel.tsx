@@ -40,10 +40,10 @@ export function KeyCustomerPanel({ selectedInstitution, selectedDate }: KeyCusto
   const titleDate = formatTitleDate(selectedDate)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       {/* Report Title */}
-      <div className="bg-card rounded border border-border px-3 py-2" suppressHydrationWarning>
-        <h2 className="text-xs font-semibold text-foreground text-center" suppressHydrationWarning>
+      <div className="bg-card rounded border border-border px-2 py-1.5" suppressHydrationWarning>
+        <h2 className="text-[10px] font-semibold text-foreground text-center" suppressHydrationWarning>
           信用卡重点客群（{titleDate}）
         </h2>
       </div>

@@ -25,7 +25,7 @@ export function TabNavigation({
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "px-3 py-1.5 text-xs font-medium transition-colors min-h-[32px] border",
+                "px-2 py-1 text-[10px] font-medium transition-colors min-h-[26px] border",
                 isActive
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-card text-foreground border-border"

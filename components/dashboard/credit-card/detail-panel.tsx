@@ -99,25 +99,25 @@ function KpiSideCard({
     <button
       onClick={onClick}
       className={cn(
-        "shrink-0 text-left border-b-2 transition-colors rounded px-3 py-2 min-w-[120px]",
+        "shrink-0 text-left border-b-2 transition-colors rounded px-2 py-1.5 min-w-[90px]",
         isActive
           ? "border-b-primary bg-primary/5"
           : "border-b-transparent hover:bg-muted/50",
-        depth > 0 && "min-w-[100px]",
+        depth > 0 && "min-w-[80px]",
       )}
     >
       <p className={cn(
         "font-medium truncate",
         isActive ? "text-primary" : "text-muted-foreground",
-        "text-[10px]",
+        "text-[9px]",
       )}>
         {row.name}
       </p>
-      <p className="font-bold tabular-nums mt-0.5 text-sm">
+      <p className="font-bold tabular-nums mt-0.5 text-xs">
         {row.value}
-        <span className="text-[9px] font-normal text-muted-foreground ml-0.5">{row.unit}</span>
+        <span className="text-[8px] font-normal text-muted-foreground ml-0.5">{row.unit}</span>
       </p>
-      <p className="text-[10px] mt-0.5">
+      <p className="text-[9px] mt-0.5">
         <span className="text-muted-foreground">{row.comparisonType} </span>
         <span className={cn("font-semibold tabular-nums", isPositive ? "text-primary" : "text-bank-green")}>
           {row.comparison}
@@ -250,13 +250,13 @@ export function DetailPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h3 className="text-xs font-semibold text-foreground">{sectionTitle}</h3>
+    <div className="flex flex-col gap-2">
+      <h3 className="text-[10px] font-semibold text-foreground">{sectionTitle}</h3>
 
       {/* Top area: KPI cards (horizontal scroll on mobile) + charts */}
       <div className="bg-card rounded border border-border overflow-hidden">
         {/* KPI cards - horizontal scroll on mobile */}
-        <div className="flex overflow-x-auto scrollbar-hide border-b border-border py-2 px-2 gap-2">
+        <div className="flex overflow-x-auto scrollbar-hide border-b border-border py-1.5 px-1.5 gap-1.5">
           {kpiDefs.map(kd => {
             const row = rowMap.get(kd.id)
             if (!row) return null
@@ -274,28 +274,28 @@ export function DetailPanel({
         </div>
 
         {/* Charts stacked vertically */}
-        <div className="p-3 flex flex-col gap-3 min-w-0">
+        <div className="p-2 flex flex-col gap-2 min-w-0">
             {/* Upper chart: value trend line (blue) */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="text-xs font-semibold text-foreground">
+              <div className="flex items-center justify-between mb-0.5">
+                <h4 className="text-[10px] font-semibold text-foreground">
                   {activeRow?.name ?? ""}月趋势
                 </h4>
               </div>
-              <p className="text-[10px] text-muted-foreground mb-1">
+              <p className="text-[9px] text-muted-foreground mb-0.5">
                 {"单位: "}{activeRow?.unit ?? ""}
               </p>
-              <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <ResponsiveContainer width="100%" height={130}>
+                <LineChart data={trendData} margin={{ top: 3, right: 8, left: 0, bottom: 3 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
                   <XAxis
                     dataKey="month"
-                    tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
+                    tick={{ fontSize: 9, fill: "hsl(0,0%,45%)" }}
                     tickFormatter={v => v.split("/")[1] + "月"}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
-                    width={60}
+                    tick={{ fontSize: 9, fill: "hsl(0,0%,45%)" }}
+                    width={45}
                     tickFormatter={v => Number(v).toLocaleString("zh-CN")}
                     domain={["auto", "auto"]}
                   />
@@ -315,18 +315,18 @@ export function DetailPanel({
 
             {/* Lower chart: YoY % bars (red positive / green negative) */}
             <div>
-              <p className="text-[10px] text-muted-foreground mb-1">同比增长 (%)</p>
-              <ResponsiveContainer width="100%" height={100}>
-                <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <p className="text-[9px] text-muted-foreground mb-0.5">同比增长 (%)</p>
+              <ResponsiveContainer width="100%" height={80}>
+                <BarChart data={trendData} margin={{ top: 3, right: 8, left: 0, bottom: 3 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
                   <XAxis
                     dataKey="month"
-                    tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
+                    tick={{ fontSize: 9, fill: "hsl(0,0%,45%)" }}
                     tickFormatter={v => v.split("/")[1] + "月"}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
-                    width={50}
+                    tick={{ fontSize: 9, fill: "hsl(0,0%,45%)" }}
+                    width={35}
                     tickFormatter={v => `${v}%`}
                     domain={["auto", "auto"]}
                   />

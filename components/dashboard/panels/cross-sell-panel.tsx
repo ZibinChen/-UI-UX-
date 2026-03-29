@@ -25,13 +25,13 @@ export function CrossSellPanel({ selectedInstitution, selectedDate }: CrossSellP
     : selectedDate
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       {/* Report Title */}
-      <div className="bg-card rounded border border-border px-3 py-2" suppressHydrationWarning>
-        <h2 className="text-xs font-semibold text-foreground text-center" suppressHydrationWarning>
+      <div className="bg-card rounded border border-border px-2 py-1.5" suppressHydrationWarning>
+        <h2 className="text-[10px] font-semibold text-foreground text-center" suppressHydrationWarning>
           交叉销售 - 自动还款绑定
         </h2>
-        <p className="text-[10px] text-muted-foreground text-center mt-0.5" suppressHydrationWarning>
+        <p className="text-[9px] text-muted-foreground text-center mt-0.5" suppressHydrationWarning>
           {`活动期间：2025年9月5日 - ${endDateLabel}`}
         </p>
       </div>
