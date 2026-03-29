@@ -9,10 +9,10 @@ import { LoanSubPanel } from "../credit-card/loan-sub-panel"
 import { generateIndicators, institutions } from "@/lib/credit-card-data"
 
 const subTabs = [
-  { id: "all", label: "全部指标" },
-  { id: "customer", label: "有效客户" },
-  { id: "consumption", label: "消费额类别" },
-  { id: "loan", label: "贷款余额和不良余额" },
+  { id: "all", label: "全部" },
+  { id: "customer", label: "客户" },
+  { id: "consumption", label: "消费" },
+  { id: "loan", label: "贷款" },
 ]
 
 interface CreditCardPanelProps {
@@ -40,7 +40,14 @@ export function CreditCardPanel({ selectedInstitution, selectedDate }: CreditCar
   const titleDate = formatTitleDate(selectedDate)
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
+      {/* Report Title */}
+      <div className="bg-card rounded border border-border px-3 py-2">
+        <h2 className="text-xs font-semibold text-foreground text-center">
+          信用卡经营指标（{titleDate}）
+        </h2>
+      </div>
+
       {/* Sub-tab Navigation */}
       <TabNavigation
         tabs={subTabs}
@@ -49,21 +56,11 @@ export function CreditCardPanel({ selectedInstitution, selectedDate }: CreditCar
         variant="pill"
       />
 
-      {/* Report Title */}
-      <div className="bg-card rounded border border-border px-4 py-3">
-        <h2 className="text-base font-semibold text-foreground text-center">
-          境内分行汇总分行信用卡经营指标表（{titleDate}）
-        </h2>
-        <p className="text-xs text-muted-foreground text-center mt-1">
-          按日更新，展示每月最后一天及当前月份最新数据即可
-        </p>
-      </div>
-
       {/* Content based on active tab */}
       {activeSubTab === "all" && (
         <IndicatorsTable
           data={indicators}
-          title={`${instName} — 主要经营指标`}
+          title={instName}
           isSummary={isSummary}
         />
       )}
@@ -72,7 +69,7 @@ export function CreditCardPanel({ selectedInstitution, selectedDate }: CreditCar
         <CustomerSubPanel
           selectedInstitution={selectedInstitution}
           selectedDate={selectedDate}
-          sectionTitle={`信用卡经营指标表 - 有效客户数（${titleDate}）`}
+          sectionTitle="有效客户数"
         />
       )}
 
@@ -80,7 +77,7 @@ export function CreditCardPanel({ selectedInstitution, selectedDate }: CreditCar
         <ConsumptionSubPanel
           selectedInstitution={selectedInstitution}
           selectedDate={selectedDate}
-          sectionTitle={`信用卡经营指标表 - 消费额类别（${titleDate}）`}
+          sectionTitle="消费额类别"
         />
       )}
 
@@ -88,7 +85,7 @@ export function CreditCardPanel({ selectedInstitution, selectedDate }: CreditCar
         <LoanSubPanel
           selectedInstitution={selectedInstitution}
           selectedDate={selectedDate}
-          sectionTitle={`信用卡经营指标表 - 贷款余额和不良余额（${titleDate}）`}
+          sectionTitle="贷款余额"
         />
       )}
     </div>

@@ -89,16 +89,16 @@ function KpiCard({
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left border-l-[3px] transition-colors rounded-r px-3 py-2.5",
-        isActive ? "border-l-primary bg-primary/5" : "border-l-transparent hover:bg-muted/50",
+        "shrink-0 text-left border-b-2 transition-colors rounded px-3 py-2 min-w-[90px]",
+        isActive ? "border-b-primary bg-primary/5" : "border-b-transparent hover:bg-muted/50",
       )}
     >
-      <p className={cn("text-xs font-medium", isActive ? "text-primary" : "text-muted-foreground")}>
+      <p className={cn("text-[10px] font-medium truncate", isActive ? "text-primary" : "text-muted-foreground")}>
         {label}
       </p>
-      <p className="text-lg font-bold tabular-nums mt-0.5">
+      <p className="text-sm font-bold tabular-nums mt-0.5">
         {unit === "%" ? `${value}%` : value.toLocaleString("zh-CN")}
-        {unit !== "%" && <span className="text-[10px] font-normal text-muted-foreground ml-1">{unit}</span>}
+        {unit !== "%" && <span className="text-[9px] font-normal text-muted-foreground ml-0.5">{unit}</span>}
       </p>
     </button>
   )
@@ -157,93 +157,80 @@ export function WeeklyPanel({ selectedInstitution }: Props) {
   }, [branches, sortField, sortDir])
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Header with week selector */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
-          {"自动还款绑定-信用卡新客户（当周情况）"}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-xs font-semibold text-foreground" suppressHydrationWarning>
+          当周情况
         </h3>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">{"选择周次："}</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-sm text-foreground bg-card border-border">
-                <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
-                {weekObj.label}
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
-              {availableWeeks.map(w => (
-                <DropdownMenuItem
-                  key={w.id}
-                  className={w.id === selectedWeek ? "bg-primary/10 text-primary font-medium" : ""}
-                  onSelect={() => setSelectedWeek(w.id)}
-                >
-                  {w.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 gap-1 text-xs text-foreground bg-card border-border">
+              <CalendarDays className="h-3 w-3 text-muted-foreground" />
+              {weekObj.label}
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 max-h-[250px] overflow-y-auto">
+            {availableWeeks.map(w => (
+              <DropdownMenuItem
+                key={w.id}
+                className={cn("text-xs", w.id === selectedWeek && "bg-primary/10 text-primary font-medium")}
+                onSelect={() => setSelectedWeek(w.id)}
+              >
+                {w.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* KPI sidebar + weekly trend chart */}
+      {/* KPI cards + weekly trend chart */}
       <div className="bg-card rounded border border-border overflow-hidden">
-        <div className="flex">
-          {/* KPI sidebar */}
-          <div className="w-[200px] shrink-0 border-r border-border py-2 flex flex-col gap-0.5">
-            <KpiCard
-              label="当周新增客户数"
-              value={displayRow.weeklyNew}
-              unit="户"
-              isActive={activeKpi === "weeklyNew"}
-              onClick={() => setActiveKpi("weeklyNew")}
-            />
-            <KpiCard
-              label="已绑定自动还款客户数"
-              value={displayRow.weeklyBound}
-              unit="户"
-              isActive={activeKpi === "weeklyBound"}
-              onClick={() => setActiveKpi("weeklyBound")}
-            />
-            <KpiCard
-              label="未绑定自动还款客户数"
-              value={displayRow.weeklyUnbound}
-              unit="户"
-              isActive={false}
-              onClick={() => {}}
-            />
-            <KpiCard
-              label="绑定率"
-              value={displayRow.weeklyBindRate}
-              unit="%"
-              isActive={activeKpi === "weeklyBindRate"}
-              onClick={() => setActiveKpi("weeklyBindRate")}
-            />
+        {/* KPI cards - horizontal scroll */}
+        <div className="flex overflow-x-auto scrollbar-hide border-b border-border py-2 px-2 gap-2">
+          <KpiCard
+            label="新增客户"
+            value={displayRow.weeklyNew}
+            unit="户"
+            isActive={activeKpi === "weeklyNew"}
+            onClick={() => setActiveKpi("weeklyNew")}
+          />
+          <KpiCard
+            label="已绑定"
+            value={displayRow.weeklyBound}
+            unit="户"
+            isActive={activeKpi === "weeklyBound"}
+            onClick={() => setActiveKpi("weeklyBound")}
+          />
+          <KpiCard
+            label="未绑定"
+            value={displayRow.weeklyUnbound}
+            unit="户"
+            isActive={false}
+            onClick={() => {}}
+          />
+          <KpiCard
+            label="绑定率"
+            value={displayRow.weeklyBindRate}
+            unit="%"
+            isActive={activeKpi === "weeklyBindRate"}
+            onClick={() => setActiveKpi("weeklyBindRate")}
+          />
+        </div>
+
+        {/* Charts stacked vertically */}
+        <div className="p-3 flex flex-col gap-3 min-w-0">
+          <div className="flex items-center">
+            <h4 className="text-xs font-semibold text-foreground" suppressHydrationWarning>
+              {activeTrend.label}周趋势
+            </h4>
           </div>
 
-          {/* Right: weekly trend charts */}
-          <div className="flex-1 p-4 flex flex-col gap-4 min-w-0">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
-                {activeTrend.label}{"（各周趋势）"}
-              </h4>
-            </div>
-
-            {/* Upper: value line */}
-            <div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-0.5 bg-[hsl(220,70%,45%)] inline-block rounded" />
-                  {activeTrend.label}
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-2.5 bg-[hsl(0,85%,46%)] inline-block rounded-sm" />
-                  {"周环比"}
-                </span>
-              </div>
-              <ResponsiveContainer width="100%" height={180}>
+          {/* Upper: value line */}
+          <div>
+            <p className="text-[10px] text-muted-foreground mb-1">单位: 户</p>
+            <ResponsiveContainer width="100%" height={140}>
                 <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
                   <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
@@ -269,8 +256,8 @@ export function WeeklyPanel({ selectedInstitution }: Props) {
 
             {/* Lower: WoW % bars */}
             <div>
-              <p className="text-[11px] text-muted-foreground mb-2">{"周环比变化 (%)"}</p>
-              <ResponsiveContainer width="100%" height={120}>
+              <p className="text-[10px] text-muted-foreground mb-1">周环比 (%)</p>
+              <ResponsiveContainer width="100%" height={80}>
                 <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
                   <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
@@ -291,27 +278,27 @@ export function WeeklyPanel({ selectedInstitution }: Props) {
 
       {/* Branch table */}
       <div className="bg-card rounded border border-border overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
-          <h4 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
-            {"下辖机构排名 — 当周情况（"}{weekObj.start}{"-"}{weekObj.end}{"）"}
+        <div className="px-3 py-2 border-b border-border">
+          <h4 className="text-xs font-semibold text-foreground" suppressHydrationWarning>
+            机构排名（{weekObj.start}-{weekObj.end}）
           </h4>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs min-w-[380px]">
             <thead>
               <tr className="bg-muted">
-                <th className="text-center px-3 py-2 font-semibold text-foreground border-b border-border w-[60px] whitespace-nowrap">{"序号"}</th>
-                <th className="text-left px-3 py-2 font-semibold text-foreground border-b border-border">{"机构"}</th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
-                  <SortHeader label="当周新增客户数" field="weeklyNew" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
+                <th className="text-center px-2 py-1.5 font-semibold text-foreground border-b border-border w-[40px]">序号</th>
+                <th className="text-left px-2 py-1.5 font-semibold text-foreground border-b border-border">机构</th>
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border">
+                  <SortHeader label="新增" field="weeklyNew" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
                 </th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
-                  <SortHeader label="已绑定客户数" field="weeklyBound" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border">
+                  <SortHeader label="已绑" field="weeklyBound" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
                 </th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
-                  <SortHeader label="未绑定客户数" field="weeklyUnbound" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border">
+                  <SortHeader label="未绑" field="weeklyUnbound" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
                 </th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border w-[100px]">
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border w-[60px]">
                   <SortHeader label="绑定率" field="weeklyBindRate" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
                 </th>
               </tr>
@@ -325,18 +312,18 @@ export function WeeklyPanel({ selectedInstitution }: Props) {
                     key={row.branchId}
                     className={cn(
                       "transition-colors",
-                      isHighlighted ? "bg-red-50 dark:bg-red-950/30 ring-1 ring-inset ring-red-300 dark:ring-red-800" :
-                        i % 2 === 0 ? "bg-card hover:bg-muted/50" : "bg-muted/30 hover:bg-muted/50"
+                      isHighlighted ? "bg-red-50 dark:bg-red-950/30" :
+                        i % 2 === 0 ? "bg-card" : "bg-muted/30"
                     )}
                   >
-                    <td className="text-center px-3 py-2 border-b border-border tabular-nums text-foreground">{row.rank}</td>
-                    <td className={cn("text-left px-3 py-2 border-b border-border", isHighlighted ? "font-semibold text-red-600 dark:text-red-400" : "text-foreground")}>
+                    <td className="text-center px-2 py-1.5 border-b border-border tabular-nums text-foreground">{row.rank}</td>
+                    <td className={cn("text-left px-2 py-1.5 border-b border-border truncate max-w-[80px]", isHighlighted ? "font-semibold text-red-600 dark:text-red-400" : "text-foreground")}>
                       {row.branchName}
                     </td>
-                    <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{row.weeklyNew.toLocaleString()}</td>
-                    <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{row.weeklyBound.toLocaleString()}</td>
-                    <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{row.weeklyUnbound.toLocaleString()}</td>
-                    <td className={cn("text-right px-3 py-2 border-b border-border tabular-nums font-semibold", rateColor)}>
+                    <td className="text-right px-2 py-1.5 border-b border-border tabular-nums text-foreground">{row.weeklyNew.toLocaleString()}</td>
+                    <td className="text-right px-2 py-1.5 border-b border-border tabular-nums text-foreground">{row.weeklyBound.toLocaleString()}</td>
+                    <td className="text-right px-2 py-1.5 border-b border-border tabular-nums text-foreground">{row.weeklyUnbound.toLocaleString()}</td>
+                    <td className={cn("text-right px-2 py-1.5 border-b border-border tabular-nums font-semibold", rateColor)}>
                       {row.weeklyBindRate}%
                     </td>
                   </tr>

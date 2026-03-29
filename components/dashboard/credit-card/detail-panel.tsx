@@ -85,7 +85,7 @@ function CompareTooltip({ active, payload, label }: any) {
   )
 }
 
-// ── KPI Sidebar Card ──────────────────────────────────────────────
+// ── KPI Card (horizontal scroll on mobile) ────────────────────────
 function KpiSideCard({
   row, isActive, onClick, depth,
 }: {
@@ -99,30 +99,25 @@ function KpiSideCard({
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left border-l-[3px] transition-colors rounded-r",
+        "shrink-0 text-left border-b-2 transition-colors rounded px-3 py-2 min-w-[120px]",
         isActive
-          ? "border-l-primary bg-primary/5"
-          : "border-l-transparent hover:bg-muted/50",
-        depth === 0 && "px-3 py-2.5",
-        depth === 1 && "pl-6 pr-3 py-2",
-        depth === 2 && "pl-9 pr-3 py-1.5",
+          ? "border-b-primary bg-primary/5"
+          : "border-b-transparent hover:bg-muted/50",
+        depth > 0 && "min-w-[100px]",
       )}
     >
       <p className={cn(
-        "font-medium",
+        "font-medium truncate",
         isActive ? "text-primary" : "text-muted-foreground",
-        depth === 0 ? "text-xs" : "text-[11px]",
+        "text-[10px]",
       )}>
         {row.name}
       </p>
-      <p className={cn(
-        "font-bold tabular-nums mt-0.5",
-        depth === 0 ? "text-lg" : depth === 1 ? "text-base" : "text-sm",
-      )}>
+      <p className="font-bold tabular-nums mt-0.5 text-sm">
         {row.value}
-        <span className="text-[10px] font-normal text-muted-foreground ml-1">{row.unit}</span>
+        <span className="text-[9px] font-normal text-muted-foreground ml-0.5">{row.unit}</span>
       </p>
-      <p className="text-[11px] mt-0.5">
+      <p className="text-[10px] mt-0.5">
         <span className="text-muted-foreground">{row.comparisonType} </span>
         <span className={cn("font-semibold tabular-nums", isPositive ? "text-primary" : "text-bank-green")}>
           {row.comparison}
@@ -255,53 +250,42 @@ export function DetailPanel({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <h3 className="text-sm font-semibold text-foreground">{sectionTitle}</h3>
+    <div className="flex flex-col gap-4">
+      <h3 className="text-xs font-semibold text-foreground">{sectionTitle}</h3>
 
-      {/* Top area: KPI sidebar + dual trend charts */}
+      {/* Top area: KPI cards (horizontal scroll on mobile) + charts */}
       <div className="bg-card rounded border border-border overflow-hidden">
-        <div className="flex">
-          {/* KPI sidebar */}
-          <div className="w-[200px] shrink-0 border-r border-border py-2 flex flex-col gap-0.5 overflow-y-auto max-h-[520px]">
-            {kpiDefs.map(kd => {
-              const row = rowMap.get(kd.id)
-              if (!row) return null
-              const depth = getDepth(kd, kpiDefs)
-              return (
-                <KpiSideCard
-                  key={kd.id}
-                  row={row}
-                  isActive={activeKpi === kd.id}
-                  depth={depth}
-                  onClick={() => { setActiveKpi(kd.id); setSortField(null) }}
-                />
-              )
-            })}
-          </div>
+        {/* KPI cards - horizontal scroll on mobile */}
+        <div className="flex overflow-x-auto scrollbar-hide border-b border-border py-2 px-2 gap-2">
+          {kpiDefs.map(kd => {
+            const row = rowMap.get(kd.id)
+            if (!row) return null
+            const depth = getDepth(kd, kpiDefs)
+            return (
+              <KpiSideCard
+                key={kd.id}
+                row={row}
+                isActive={activeKpi === kd.id}
+                depth={depth}
+                onClick={() => { setActiveKpi(kd.id); setSortField(null) }}
+              />
+            )
+          })}
+        </div>
 
-          {/* Right: two charts stacked */}
-          <div className="flex-1 p-4 flex flex-col gap-4 min-w-0">
+        {/* Charts stacked vertically */}
+        <div className="p-3 flex flex-col gap-3 min-w-0">
             {/* Upper chart: value trend line (blue) */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-semibold text-foreground">
+                <h4 className="text-xs font-semibold text-foreground">
                   {activeRow?.name ?? ""}月趋势
                 </h4>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <span className="w-3 h-0.5 bg-[hsl(220,70%,45%)] inline-block rounded" />
-                    {activeRow?.name ?? ""}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-3 h-2.5 bg-[hsl(0,85%,46%)] inline-block rounded-sm" />
-                    同比增长
-                  </span>
-                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground mb-2">
+              <p className="text-[10px] text-muted-foreground mb-1">
                 {"单位: "}{activeRow?.unit ?? ""}
               </p>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
                   <XAxis
@@ -331,8 +315,8 @@ export function DetailPanel({
 
             {/* Lower chart: YoY % bars (red positive / green negative) */}
             <div>
-              <p className="text-[11px] text-muted-foreground mb-2">同比增长 (%)</p>
-              <ResponsiveContainer width="100%" height={150}>
+              <p className="text-[10px] text-muted-foreground mb-1">同比增长 (%)</p>
+              <ResponsiveContainer width="100%" height={100}>
                 <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
                   <XAxis
@@ -361,40 +345,40 @@ export function DetailPanel({
             </div>
           </div>
         </div>
-      </div>
+      
 
       {/* Branch Ranking Table */}
       <div className="bg-card rounded border border-border overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-foreground">
-            下辖机构排名 — {activeRow?.name ?? ""}
+        <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+          <h4 className="text-xs font-semibold text-foreground truncate">
+            机构排名 — {activeRow?.name ?? ""}
           </h4>
           <button
             onClick={openCompareDialog}
-            className="text-xs px-3 py-1.5 rounded border border-border bg-card text-foreground hover:bg-muted transition-colors"
+            className="text-[10px] px-2 py-1 rounded border border-border bg-card text-foreground hover:bg-muted transition-colors shrink-0"
           >
-            分行趋势对比
+            分行对比
           </button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs min-w-[320px]">
             <thead>
               <tr className="bg-muted">
-                <th className="text-center px-3 py-2 font-semibold text-foreground border-b border-border w-[60px]">序号</th>
-                <th className="text-left px-3 py-2 font-semibold text-foreground border-b border-border">机构</th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
+                <th className="text-center px-2 py-1.5 font-semibold text-foreground border-b border-border w-[40px]">序号</th>
+                <th className="text-left px-2 py-1.5 font-semibold text-foreground border-b border-border">机构</th>
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border">
                   <SortHeader
-                    label={`${activeRow?.name ?? ""} (${activeRow?.unit ?? ""})`}
+                    label={activeRow?.unit ?? "数值"}
                     field="value"
                     currentField={sortField}
                     currentDir={sortDir}
                     onSort={handleSort}
                   />
                 </th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border w-[130px]">
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border w-[80px]">
                   <SortHeader
-                    label={compLabel}
+                    label="增长"
                     field="growth"
                     currentField={sortField}
                     currentDir={sortDir}
@@ -413,19 +397,19 @@ export function DetailPanel({
                     className={cn(
                       "transition-colors",
                       isHighlighted
-                        ? "bg-red-50 dark:bg-red-950/30 ring-1 ring-inset ring-red-300 dark:ring-red-800"
-                        : i % 2 === 0 ? "bg-card hover:bg-muted/50" : "bg-muted/30 hover:bg-muted/50"
+                        ? "bg-red-50 dark:bg-red-950/30"
+                        : i % 2 === 0 ? "bg-card" : "bg-muted/30"
                     )}
                   >
-                    <td className="text-center px-3 py-2 border-b border-border tabular-nums text-foreground">{row.rank}</td>
-                    <td className={cn("text-left px-3 py-2 border-b border-border", isHighlighted ? "font-semibold text-red-600 dark:text-red-400" : "text-foreground")}>
+                    <td className="text-center px-2 py-1.5 border-b border-border tabular-nums text-foreground">{row.rank}</td>
+                    <td className={cn("text-left px-2 py-1.5 border-b border-border truncate max-w-[100px]", isHighlighted ? "font-semibold text-red-600 dark:text-red-400" : "text-foreground")}>
                       {row.branchName}
                     </td>
-                    <td className="text-right px-3 py-2 border-b border-border tabular-nums font-medium text-foreground">{row.valueFormatted}</td>
-                    <td className="text-right px-3 py-2 border-b border-border">
+                    <td className="text-right px-2 py-1.5 border-b border-border tabular-nums font-medium text-foreground">{row.valueFormatted}</td>
+                    <td className="text-right px-2 py-1.5 border-b border-border">
                       <span className={cn("tabular-nums font-semibold inline-flex items-center gap-0.5", isPositive ? "text-primary" : "text-bank-green")}>
                         {row.growthFormatted}
-                        {isPositive ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                        {isPositive ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
                       </span>
                     </td>
                   </tr>
@@ -438,19 +422,19 @@ export function DetailPanel({
 
       {/* Comparison chart (shown after dialog confirm) */}
       {comparisonData.length > 0 && !dialogOpen && (
-        <div className="bg-card rounded border border-border p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-foreground">
-              分行趋势对比 — {activeRow?.name ?? ""}
+        <div className="bg-card rounded border border-border p-3">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-semibold text-foreground truncate">
+              分行趋势对比
             </h4>
             <button
               onClick={() => setSelectedBranches([])}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
             >
               收起
             </button>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={200}>
             <LineChart margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
               <XAxis
@@ -488,15 +472,15 @@ export function DetailPanel({
 
       {/* Branch Selection Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[95vw] max-h-[80vh] overflow-hidden flex flex-col mx-2">
           <DialogHeader>
-            <DialogTitle>选择分行进行趋势对比</DialogTitle>
-            <DialogDescription>
-              选择 2-6 个分行，对比「{activeRow?.name ?? ""}」的月度趋势（已选 {selectedBranches.length}/6）
+            <DialogTitle className="text-sm">选择分行进行对比</DialogTitle>
+            <DialogDescription className="text-xs">
+              选择 2-6 个分行（已选 {selectedBranches.length}/6）
             </DialogDescription>
           </DialogHeader>
-          <div className="overflow-y-auto flex-1 -mx-6 px-6">
-            <div className="grid grid-cols-2 gap-2 py-2">
+          <div className="overflow-y-auto flex-1 -mx-4 px-4">
+            <div className="grid grid-cols-2 gap-1.5 py-2">
               {branchList.map(b => {
                 const checked = selectedBranches.includes(b.id)
                 const disabled = !checked && selectedBranches.length >= 6
@@ -504,7 +488,7 @@ export function DetailPanel({
                   <label
                     key={b.id}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded border text-sm cursor-pointer transition-colors",
+                      "flex items-center gap-1.5 px-2 py-1.5 rounded border text-xs cursor-pointer transition-colors",
                       checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
                       disabled && !checked && "opacity-40 cursor-not-allowed"
                     )}
@@ -513,6 +497,7 @@ export function DetailPanel({
                       checked={checked}
                       disabled={disabled}
                       onCheckedChange={() => toggleBranch(b.id)}
+                      className="h-3.5 w-3.5"
                     />
                     <span className={cn("truncate", checked ? "text-primary font-medium" : "text-foreground")}>
                       {b.name}
@@ -522,24 +507,24 @@ export function DetailPanel({
               })}
             </div>
           </div>
-          <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div className="flex items-center justify-between pt-2 border-t border-border">
             <button
               onClick={() => setSelectedBranches([])}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
             >
-              清空选择
+              清空
             </button>
             <button
               onClick={() => setDialogOpen(false)}
               disabled={selectedBranches.length < 2}
               className={cn(
-                "px-4 py-2 rounded text-sm font-medium transition-colors",
+                "px-3 py-1.5 rounded text-xs font-medium transition-colors",
                 selectedBranches.length >= 2
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "bg-muted text-muted-foreground cursor-not-allowed"
               )}
             >
-              确认对比 ({selectedBranches.length})
+              确认 ({selectedBranches.length})
             </button>
           </div>
         </DialogContent>

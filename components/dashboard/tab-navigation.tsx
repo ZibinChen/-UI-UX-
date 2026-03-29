@@ -17,7 +17,7 @@ export function TabNavigation({
 }: TabNavigationProps) {
   if (variant === "pill") {
     return (
-      <div className="flex items-center gap-0 flex-wrap">
+      <div className="flex items-center gap-0">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
           return (
@@ -25,10 +25,10 @@ export function TabNavigation({
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "px-4 py-1.5 text-sm font-medium transition-colors min-h-[36px] border",
+                "px-3 py-1.5 text-xs font-medium transition-colors min-h-[32px] border",
                 isActive
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card text-foreground border-border hover:bg-muted"
+                  : "bg-card text-foreground border-border"
               )}
             >
               {tab.label}

@@ -33,21 +33,18 @@ export function FourCustomerGroupPanel({ selectedInstitution, selectedDate }: Fo
     [selectedInstitution, selectedDate]
   )
 
-  const sectionTitle = `对私折效四大客群（${titleDate}）`
+  const sectionTitle = "对私折效四大客群"
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
       {/* Report Title */}
-      <div className="bg-card rounded border border-border px-4 py-3" suppressHydrationWarning>
-        <h2 className="text-base font-semibold text-foreground text-center" suppressHydrationWarning>
-          {"对私折效四大客群表（"}{titleDate}{")"}
+      <div className="bg-card rounded border border-border px-3 py-2" suppressHydrationWarning>
+        <h2 className="text-xs font-semibold text-foreground text-center" suppressHydrationWarning>
+          对私折效四大客群（{titleDate}）
         </h2>
-        <p className="text-xs text-muted-foreground text-center mt-1" suppressHydrationWarning>
-          {"四大客群指标：月活客群、新增活跃客户、中高端新增活跃客户、跨境交易客户"}
-        </p>
       </div>
 
-      {/* Content: DetailPanel with all 4 KPIs as switchable sidebar cards */}
+      {/* Content: DetailPanel with all 4 KPIs as switchable cards */}
       <DetailPanel
         kpiDefs={kpiDefs}
         indicators={indicators}

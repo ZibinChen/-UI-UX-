@@ -79,7 +79,7 @@ function SortHeader({
   )
 }
 
-// ── KPI Side Card ────────────────────────────────────────────────
+// ── KPI Card (horizontal on mobile) ──────────────────────────────
 function KpiCard({
   label, value, unit, isActive, onClick,
 }: {
@@ -89,16 +89,16 @@ function KpiCard({
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left border-l-[3px] transition-colors rounded-r px-3 py-2.5",
-        isActive ? "border-l-primary bg-primary/5" : "border-l-transparent hover:bg-muted/50",
+        "shrink-0 text-left border-b-2 transition-colors rounded px-3 py-2 min-w-[100px]",
+        isActive ? "border-b-primary bg-primary/5" : "border-b-transparent hover:bg-muted/50",
       )}
     >
-      <p className={cn("text-xs font-medium", isActive ? "text-primary" : "text-muted-foreground")}>
+      <p className={cn("text-[10px] font-medium truncate", isActive ? "text-primary" : "text-muted-foreground")}>
         {label}
       </p>
-      <p className="text-lg font-bold tabular-nums mt-0.5">
+      <p className="text-sm font-bold tabular-nums mt-0.5">
         {unit === "%" ? `${value}%` : value.toLocaleString("zh-CN")}
-        {unit !== "%" && <span className="text-[10px] font-normal text-muted-foreground ml-1">{unit}</span>}
+        {unit !== "%" && <span className="text-[9px] font-normal text-muted-foreground ml-0.5">{unit}</span>}
       </p>
     </button>
   )
@@ -166,59 +166,58 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
     : selectedDate
 
   return (
-    <div className="flex flex-col gap-6">
-      <h3 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
+    <div className="flex flex-col gap-4">
+      <h3 className="text-xs font-semibold text-foreground" suppressHydrationWarning>
         {'自动还款绑定-信用卡新客户（2025年9月5日 至 '}{dateLabel}{'）'}
       </h3>
 
       {/* KPI + trend area */}
       <div className="bg-card rounded border border-border overflow-hidden">
-        <div className="flex">
-          {/* KPI sidebar */}
-          <div className="w-[200px] shrink-0 border-r border-border py-2 flex flex-col gap-0.5">
-            <KpiCard
-              label="活动新增客户数"
-              value={displayRow.newCust}
-              unit="户"
-              isActive={activeKpi === "cs_new_cust"}
-              onClick={() => setActiveKpi("cs_new_cust")}
-            />
-            <KpiCard
-              label="已绑定自动还款客户数"
-              value={displayRow.bound}
-              unit="户"
-              isActive={activeKpi === "cs_bound"}
-              onClick={() => setActiveKpi("cs_bound")}
-            />
-            <KpiCard
-              label="未绑定自动还款客户数"
-              value={displayRow.unbound}
-              unit="户"
-              isActive={activeKpi === "cs_unbound"}
-              onClick={() => setActiveKpi("cs_unbound")}
-            />
-            <KpiCard
-              label="绑定率"
-              value={displayRow.bindRate}
-              unit="%"
-              isActive={activeKpi === "cs_bindrate"}
-              onClick={() => setActiveKpi("cs_bindrate")}
-            />
-          </div>
+        {/* KPI cards - horizontal scroll */}
+        <div className="flex overflow-x-auto scrollbar-hide border-b border-border py-2 px-2 gap-2">
+          <KpiCard
+            label="新增客户数"
+            value={displayRow.newCust}
+            unit="户"
+            isActive={activeKpi === "cs_new_cust"}
+            onClick={() => setActiveKpi("cs_new_cust")}
+          />
+          <KpiCard
+            label="已绑定客户"
+            value={displayRow.bound}
+            unit="户"
+            isActive={activeKpi === "cs_bound"}
+            onClick={() => setActiveKpi("cs_bound")}
+          />
+          <KpiCard
+            label="未绑定客户"
+            value={displayRow.unbound}
+            unit="户"
+            isActive={activeKpi === "cs_unbound"}
+            onClick={() => setActiveKpi("cs_unbound")}
+          />
+          <KpiCard
+            label="绑定率"
+            value={displayRow.bindRate}
+            unit="%"
+            isActive={activeKpi === "cs_bindrate"}
+            onClick={() => setActiveKpi("cs_bindrate")}
+          />
+        </div>
 
-          {/* Right: trend charts */}
-          <div className="flex-1 p-4 flex flex-col gap-4 min-w-0">
+        {/* Charts stacked vertically */}
+        <div className="p-3 flex flex-col gap-3 min-w-0">
             {/* Mode toggle */}
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
-                {activeTrend.label}{'累计趋势'}
+              <h4 className="text-xs font-semibold text-foreground truncate" suppressHydrationWarning>
+                {activeTrend.label}趋势
               </h4>
-              <div className="flex items-center gap-0">
+              <div className="flex items-center gap-0 shrink-0">
                 <button
                   onClick={() => setTrendMode("month")}
                   className={cn(
-                    "px-3 py-1 text-xs border font-medium transition-colors",
-                    trendMode === "month" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border hover:bg-muted"
+                    "px-2 py-1 text-[10px] border font-medium transition-colors",
+                    trendMode === "month" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"
                   )}
                 >
                   按月
@@ -226,8 +225,8 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
                 <button
                   onClick={() => setTrendMode("week")}
                   className={cn(
-                    "px-3 py-1 text-xs border-y border-r font-medium transition-colors",
-                    trendMode === "week" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border hover:bg-muted"
+                    "px-2 py-1 text-[10px] border-y border-r font-medium transition-colors",
+                    trendMode === "week" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"
                   )}
                 >
                   按周
@@ -237,17 +236,8 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
 
             {/* Upper: value line */}
             <div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-0.5 bg-[hsl(220,70%,45%)] inline-block rounded" />
-                  {activeTrend.label}{'（累计）'}
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-2.5 bg-[hsl(0,85%,46%)] inline-block rounded-sm" />
-                  {'累计值环比'}
-                </span>
-              </div>
-              <ResponsiveContainer width="100%" height={200}>
+              <p className="text-[10px] text-muted-foreground mb-1">单位: 户</p>
+              <ResponsiveContainer width="100%" height={140}>
                 <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
                   <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
@@ -273,8 +263,8 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
 
             {/* Lower: MoM % bars */}
             <div>
-              <p className="text-[11px] text-muted-foreground mb-2">{'累计值环比变化 (%)'}</p>
-              <ResponsiveContainer width="100%" height={140}>
+              <p className="text-[10px] text-muted-foreground mb-1">环比变化 (%)</p>
+              <ResponsiveContainer width="100%" height={100}>
                 <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
                   <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
@@ -291,31 +281,30 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
             </div>
           </div>
         </div>
-      </div>
 
       {/* Branch ranking table */}
       <div className="bg-card rounded border border-border overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
-          <h4 className="text-sm font-semibold text-foreground" suppressHydrationWarning>
-            {'下辖机构排名 — 自动还款绑定-信用卡新客户'}
+        <div className="px-3 py-2 border-b border-border">
+          <h4 className="text-xs font-semibold text-foreground" suppressHydrationWarning>
+            机构排名
           </h4>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs min-w-[400px]">
             <thead>
               <tr className="bg-muted">
-                <th className="text-center px-3 py-2 font-semibold text-foreground border-b border-border w-[60px] whitespace-nowrap">{"序号"}</th>
-                <th className="text-left px-3 py-2 font-semibold text-foreground border-b border-border">机构</th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
-                  <SortHeader label="活动新增客户数" field="newCust" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
+                <th className="text-center px-2 py-1.5 font-semibold text-foreground border-b border-border w-[40px]">序号</th>
+                <th className="text-left px-2 py-1.5 font-semibold text-foreground border-b border-border">机构</th>
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border">
+                  <SortHeader label="新增" field="newCust" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
                 </th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
-                  <SortHeader label="已绑定客户数" field="bound" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border">
+                  <SortHeader label="已绑" field="bound" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
                 </th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border">
-                  <SortHeader label="未绑定客户数" field="unbound" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border">
+                  <SortHeader label="未绑" field="unbound" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
                 </th>
-                <th className="text-right px-3 py-2 font-semibold text-foreground border-b border-border w-[100px]">
+                <th className="text-right px-2 py-1.5 font-semibold text-foreground border-b border-border w-[60px]">
                   <SortHeader label="绑定率" field="bindRate" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
                 </th>
               </tr>
@@ -323,25 +312,24 @@ export function ActivityProgressPanel({ selectedInstitution, selectedDate }: Pro
             <tbody>
               {sortedBranches.map((row, i) => {
                 const isHighlighted = selectedInstitution !== "all" && row.branchId === selectedInstitution
-                // Color code bind rate: green >= 25%, red < 10%
                 const rateColor = row.bindRate >= 25 ? "text-bank-green" : row.bindRate < 10 ? "text-primary" : "text-foreground"
                 return (
                   <tr
                     key={row.branchId}
                     className={cn(
                       "transition-colors",
-                      isHighlighted ? "bg-red-50 dark:bg-red-950/30 ring-1 ring-inset ring-red-300 dark:ring-red-800" :
-                        i % 2 === 0 ? "bg-card hover:bg-muted/50" : "bg-muted/30 hover:bg-muted/50"
+                      isHighlighted ? "bg-red-50 dark:bg-red-950/30" :
+                        i % 2 === 0 ? "bg-card" : "bg-muted/30"
                     )}
                   >
-                    <td className="text-center px-3 py-2 border-b border-border tabular-nums text-foreground">{row.rank}</td>
-                    <td className={cn("text-left px-3 py-2 border-b border-border", isHighlighted ? "font-semibold text-red-600 dark:text-red-400" : "text-foreground")}>
+                    <td className="text-center px-2 py-1.5 border-b border-border tabular-nums text-foreground">{row.rank}</td>
+                    <td className={cn("text-left px-2 py-1.5 border-b border-border truncate max-w-[80px]", isHighlighted ? "font-semibold text-red-600 dark:text-red-400" : "text-foreground")}>
                       {row.branchName}
                     </td>
-                    <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{row.newCust.toLocaleString()}</td>
-                    <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{row.bound.toLocaleString()}</td>
-                    <td className="text-right px-3 py-2 border-b border-border tabular-nums text-foreground">{row.unbound.toLocaleString()}</td>
-                    <td className={cn("text-right px-3 py-2 border-b border-border tabular-nums font-semibold", rateColor)}>
+                    <td className="text-right px-2 py-1.5 border-b border-border tabular-nums text-foreground">{row.newCust.toLocaleString()}</td>
+                    <td className="text-right px-2 py-1.5 border-b border-border tabular-nums text-foreground">{row.bound.toLocaleString()}</td>
+                    <td className="text-right px-2 py-1.5 border-b border-border tabular-nums text-foreground">{row.unbound.toLocaleString()}</td>
+                    <td className={cn("text-right px-2 py-1.5 border-b border-border tabular-nums font-semibold", rateColor)}>
                       {row.bindRate}%
                     </td>
                   </tr>

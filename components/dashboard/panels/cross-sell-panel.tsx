@@ -6,8 +6,8 @@ import { ActivityProgressPanel } from "../cross-sell/activity-progress-panel"
 import { WeeklyPanel } from "../cross-sell/weekly-panel"
 
 const subTabs = [
-  { id: "progress", label: "自动还款绑定-信用卡新客户" },
-  { id: "weekly", label: "自动还款绑定-信用卡新客户（当周情况）" },
+  { id: "progress", label: "累计情况" },
+  { id: "weekly", label: "当周情况" },
 ]
 
 interface CrossSellPanelProps {
@@ -25,7 +25,17 @@ export function CrossSellPanel({ selectedInstitution, selectedDate }: CrossSellP
     : selectedDate
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
+      {/* Report Title */}
+      <div className="bg-card rounded border border-border px-3 py-2" suppressHydrationWarning>
+        <h2 className="text-xs font-semibold text-foreground text-center" suppressHydrationWarning>
+          交叉销售 - 自动还款绑定
+        </h2>
+        <p className="text-[10px] text-muted-foreground text-center mt-0.5" suppressHydrationWarning>
+          {`活动期间：2025年9月5日 - ${endDateLabel}`}
+        </p>
+      </div>
+
       {/* Sub-tab Navigation */}
       <TabNavigation
         tabs={subTabs}
@@ -33,16 +43,6 @@ export function CrossSellPanel({ selectedInstitution, selectedDate }: CrossSellP
         onTabChange={setActiveSubTab}
         variant="pill"
       />
-
-      {/* Report Title */}
-      <div className="bg-card rounded border border-border px-4 py-3" suppressHydrationWarning>
-        <h2 className="text-base font-semibold text-foreground text-center" suppressHydrationWarning>
-          {'交叉销售'}
-        </h2>
-        <p className="text-xs text-muted-foreground text-center mt-1" suppressHydrationWarning>
-          {`活动期间：2025年9月5日 - ${endDateLabel}`}
-        </p>
-      </div>
 
       {activeSubTab === "progress" && (
         <ActivityProgressPanel
