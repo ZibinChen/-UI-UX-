@@ -231,47 +231,46 @@ export function WeeklyPanel({ selectedInstitution }: Props) {
           <div>
             <p className="text-[10px] text-muted-foreground mb-1">单位: 户</p>
             <ResponsiveContainer width="100%" height={140}>
-                <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
-                  <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
-                    width={60}
-                    tickFormatter={v => Number(v).toLocaleString("zh-CN")}
-                    domain={["auto", "auto"]}
-                  />
-                  <RTooltip content={<LineTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey={activeTrend.key}
-                    name={activeTrend.label}
-                    stroke="hsl(220, 70%, 45%)"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: "hsl(220, 70%, 45%)" }}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+              <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
+                <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }}
+                  width={60}
+                  tickFormatter={v => Number(v).toLocaleString("zh-CN")}
+                  domain={["auto", "auto"]}
+                />
+                <RTooltip content={<LineTooltip />} />
+                <Line
+                  type="monotone"
+                  dataKey={activeTrend.key}
+                  name={activeTrend.label}
+                  stroke="hsl(220, 70%, 45%)"
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: "hsl(220, 70%, 45%)" }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
 
-            {/* Lower: WoW % bars */}
-            <div>
-              <p className="text-[10px] text-muted-foreground mb-1">周环比 (%)</p>
-              <ResponsiveContainer width="100%" height={80}>
-                <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
-                  <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
-                  <YAxis tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} width={50} tickFormatter={v => `${v}%`} domain={["auto", "auto"]} />
-                  <RTooltip content={<BarTooltip />} />
-                  <ReferenceLine y={0} stroke="hsl(0,0%,75%)" />
-                  <Bar dataKey="wowPct" name="周环比" barSize={24} radius={[2, 2, 0, 0]}>
-                    {trendData.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.wowPct === null ? "transparent" : entry.wowPct >= 0 ? "hsl(0, 85%, 46%)" : "hsl(140, 60%, 40%)"} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          {/* Lower: WoW % bars */}
+          <div>
+            <p className="text-[10px] text-muted-foreground mb-1">周环比 (%)</p>
+            <ResponsiveContainer width="100%" height={80}>
+              <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,90%)" />
+                <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(0,0%,45%)" }} width={50} tickFormatter={v => `${v}%`} domain={["auto", "auto"]} />
+                <RTooltip content={<BarTooltip />} />
+                <ReferenceLine y={0} stroke="hsl(0,0%,75%)" />
+                <Bar dataKey="wowPct" name="周环比" barSize={24} radius={[2, 2, 0, 0]}>
+                  {trendData.map((entry, idx) => (
+                    <Cell key={idx} fill={entry.wowPct === null ? "transparent" : entry.wowPct >= 0 ? "hsl(0, 85%, 46%)" : "hsl(140, 60%, 40%)"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
