@@ -41,9 +41,9 @@ export function DashboardShell() {
   const currentInst = institutions.find((i) => i.id === selectedInstitution)
 
   return (
-    <div className="h-dvh flex flex-col bg-background overflow-hidden">
+    <div className="h-full flex flex-col bg-background overflow-hidden">
       {/* Mobile Header */}
-      <header className="h-12 border-b border-border bg-card flex items-center justify-between px-3 shrink-0">
+      <header className="h-11 border-b border-border bg-card flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
             <span className="text-primary-foreground text-xs font-bold">B</span>
@@ -150,7 +150,7 @@ export function DashboardShell() {
       </ScrollArea>
 
       {/* Bottom Navigation */}
-      <nav className="h-14 border-t border-border bg-card flex items-center justify-around shrink-0 px-2">
+      <nav className="h-[52px] border-t border-border bg-card flex items-center justify-around shrink-0 px-2 pb-1">
         {bottomNavItems.map((item) => {
           const isActive = activeNavItem === item.id
           return (
